@@ -21,8 +21,7 @@ public interface IPresenter {
         String nombre,
         long tiempo,
         int tamanioMemoria,
-        boolean pasaPorBloqueado,
-        Particion particionSeleccionada
+        boolean pasaPorBloqueado
     );
 
     void agregarParticion(String nombre, int tamano);

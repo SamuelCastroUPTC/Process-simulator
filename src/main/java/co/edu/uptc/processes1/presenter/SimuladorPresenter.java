@@ -67,8 +67,7 @@ public class SimuladorPresenter implements IPresenter {
         String nombre,
         long tiempo,
         int tamanioMemoria,
-        boolean pasaPorBloqueado,
-        Particion particionSeleccionada
+        boolean pasaPorBloqueado
     ) {
         if (existeNombre(nombre)) {
             view.mostrarError("El nombre ya existe");
@@ -82,16 +81,7 @@ public class SimuladorPresenter implements IPresenter {
             tamanioMemoria,
             pasaPorBloqueado
         );
-        nuevo.setParticion(particionSeleccionada);
-        
-        // Si el proceso excede el tamaño de la partición, marcarlo pero no agregarlo a la partición
-        if (tamanioMemoria > particionSeleccionada.getTamanoTotal()) {
-            nuevo.setExcedeTamanoParticion(true);
-        } else {
-            // Si cabe en la partición, agregarlo normalmente
-            particionSeleccionada.agregarProceso(nuevo);
-        }
-        
+
         procesosCargados.add(nuevo);
 
         // Al cargar exitosamente, se registra inmediatamente en Listo.
@@ -103,19 +93,13 @@ public class SimuladorPresenter implements IPresenter {
                 nuevo.getTamanioMemoria(),
                 nuevo.isPasaPorBloqueado(),
                 RegistroSimulacion.INICIO,
-                nuevo.getParticion() != null ? nuevo.getParticion().getNombre() : null
+                null
             ));
 
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
         view.limpiarFormularioCarga();
-        if (nuevo.isExcedeTamanoParticion()) {
-            view.mostrarAviso("El proceso '" + nombre +
-                "' fue cargado, pero no se ejecutara porque su tamano " +
-                "supera el de la particion asignada.");
-        } else {
-            view.mostrarExito("Proceso '" + nombre + "' cargado correctamente.");
-        }
+        view.mostrarExito("Proceso '" + nombre + "' cargado correctamente.");
     }
 
     @Override
@@ -155,11 +139,11 @@ public class SimuladorPresenter implements IPresenter {
             .sorted(Comparator.comparingLong(Proceso::getTiempoRestante))
             .collect(Collectors.toList());
 
-        ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados);
+        ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados, particionesMemoria);
         sincronizarHistorialesConRegistro(ultimoRegistro);
 
         procesosCargados.clear();
-        particionesMemoria.forEach(Particion::liberarProceso);
+        particionesMemoria.forEach(Particion::liberar);
         view.actualizarTablaCargados(new ArrayList<>());
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
         view.actualizarEstadoSimulacion("Simulacion finalizada.");
@@ -177,7 +161,6 @@ public class SimuladorPresenter implements IPresenter {
         String nombre = view.getNombreProceso();
         String tiempoStr = view.getTiempoProceso();
         String tamanioMemoriaStr = view.getTamanioMemoria();
-        Particion particionSeleccionada = view.getParticionSeleccionada();
         boolean pasaPorBloqueado = view.isPasaPorBloqueado();
 
         if (nombre.isBlank() || tiempoStr.isBlank() || tamanioMemoriaStr.isBlank()) {
@@ -229,17 +212,11 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        if (particionSeleccionada == null) {
-            view.mostrarError("Es obligatorio seleccionar una partición.");
-            return;
-        }
-
         agregarProceso(
             nombre,
             tiempo,
             tamanioMemoria,
-            pasaPorBloqueado,
-            particionSeleccionada
+            pasaPorBloqueado
         );
     }
 

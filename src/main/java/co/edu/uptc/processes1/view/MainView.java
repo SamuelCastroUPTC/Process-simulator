@@ -602,7 +602,6 @@ public class MainView implements IView {
                 formularioParticion.getNombre(),
                 Integer.parseInt(formularioParticion.getTamano())
             );
-            cargarParticionesEnFormulario();
         }
     }
 
@@ -647,7 +646,6 @@ public class MainView implements IView {
     @Override public String   getNombreProceso()           { return formularioModal != null ? formularioModal.getNombre()         : ""; }
     @Override public String   getTiempoProceso()           { return formularioModal != null ? formularioModal.getTiempo()         : ""; }
     @Override public String   getTamanioMemoria()          { return formularioModal != null ? formularioModal.getTamanioMemoria() : ""; }
-    @Override public Particion getParticionSeleccionada()  { return formularioModal != null ? formularioModal.getParticionSeleccionada() : null; }
     @Override public boolean  isPasaPorBloqueado()         { return formularioModal != null && formularioModal.isPasaPorBloqueado(); }
 
     @Override
@@ -672,7 +670,6 @@ public class MainView implements IView {
     private void abrirFormularioSeguro() {
         try {
             asegurarFormularioModal();
-            cargarParticionesEnFormulario();
             formularioModal.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de creacion.");
@@ -686,12 +683,6 @@ public class MainView implements IView {
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de particiones.");
         }
-    }
-
-    private void cargarParticionesEnFormulario() {
-        if (formularioModal == null
-                || !(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)) return;
-        formularioModal.cargarParticiones(p.getParticionesMemoria());
     }
 
     private void abrirManualUsuario() {

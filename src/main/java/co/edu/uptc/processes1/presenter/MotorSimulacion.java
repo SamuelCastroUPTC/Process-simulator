@@ -15,22 +15,14 @@ import java.util.List;
 public class MotorSimulacion {
 
     private static final long QUANTUM = 5000L;
+    private int ultimaParticionUsada = 0;
 
-    public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales) {
+    public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales, List<Particion> particiones) {
         RegistroSimulacion registro = new RegistroSimulacion();
         List<ProcesoRuntime> colaListos = new ArrayList<>();
 
         for (Proceso proceso : procesosIniciales) {
             ProcesoRuntime runtime = ProcesoRuntime.desde(proceso);
-            if (runtime.particion == null) {
-                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, runtime);
-                continue;
-            }
-            // 2B: Filtrar procesos que exceden tamaño de partición
-            if (proceso.isExcedeTamanoParticion()) {
-                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, runtime);
-                continue;
-            }
             colaListos.add(runtime);
             registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
         }
@@ -41,33 +33,63 @@ public class MotorSimulacion {
                 continue;
             }
 
-            registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
-
-            long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
-            long tiempoRestante = Math.max(0L, actual.tiempoRestante - rafaga);
-            registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoRestante);
-            actual.tiempoRestante = tiempoRestante;
-
-            if (actual.tiempoRestante <= 0L) {
-                registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
+            Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria);
+            if (particionAsignada == null) {
+                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, actual);
                 continue;
             }
 
-            if (actual.pasaPorBloqueado) {
-                registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
-                registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
-                registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
+            particionAsignada.ocupar();
+            actual.particion = particionAsignada;
+
+            try {
+                registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
+
+                long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
+                long tiempoRestante = Math.max(0L, actual.tiempoRestante - rafaga);
+                registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoRestante);
+                actual.tiempoRestante = tiempoRestante;
+
+                if (actual.tiempoRestante <= 0L) {
+                    registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
+                    continue;
+                }
+
+                if (actual.pasaPorBloqueado) {
+                    registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
+                    registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
+                    registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
+                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
+                    colaListos.add(actual);
+                    continue;
+                }
+
+                registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
                 registrarEstado(registro, RegistroSimulacion.INICIO, actual);
                 colaListos.add(actual);
-                continue;
+            } finally {
+                particionAsignada.liberar();
+                actual.particion = null;
             }
-
-            registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
-            registrarEstado(registro, RegistroSimulacion.INICIO, actual);
-            colaListos.add(actual);
         }
 
         return registro;
+    }
+
+    private Particion buscarParticionNextFit(List<Particion> particiones, int tamanio) {
+        if (particiones == null || particiones.isEmpty()) {
+            return null;
+        }
+        int n = particiones.size();
+        for (int i = 0; i < n; i++) {
+            int idx = (ultimaParticionUsada + i) % n;
+            Particion p = particiones.get(idx);
+            if (p.estaDisponible(tamanio)) {
+                ultimaParticionUsada = idx;
+                return p;
+            }
+        }
+        return null;
     }
 
     private ProcesoRuntime extraerSiguiente(List<ProcesoRuntime> colaListos) {
@@ -100,7 +122,7 @@ public class MotorSimulacion {
         private final String nombre;
         private final int tamanioMemoria;
         private final boolean pasaPorBloqueado;
-        private final Particion particion;
+        private Particion particion;
         private long tiempoRestante;
 
         private ProcesoRuntime(

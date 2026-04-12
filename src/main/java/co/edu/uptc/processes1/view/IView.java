@@ -51,9 +51,6 @@ public interface IView {
     /** Tamaño requerido en memoria en unidades (nuevo campo). */
     String getTamanioMemoria();
 
-    /** Partición seleccionada para el proceso. */
-    Particion getParticionSeleccionada();
-
     /** ¿El proceso puede bloquearse por E/S u otro evento? */
     boolean isPasaPorBloqueado();
 

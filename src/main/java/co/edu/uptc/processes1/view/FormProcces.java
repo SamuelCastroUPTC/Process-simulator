@@ -1,8 +1,6 @@
 package co.edu.uptc.processes1.view;
 
-import co.edu.uptc.processes1.model.Particion;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,8 +11,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
-
-import java.util.List;
 
 /**
  * FormProcces — Modal UNDECORATED para crear un proceso.
@@ -39,7 +35,6 @@ public class FormProcces {
     private TextField        txtNombre;
     private TextField        txtTiempo;
     private TextField        txtTamanioMemoria;   // campo nuevo
-    private ComboBox<Particion> cmbParticiones;
     private ComboBox<String> cmbBloqueable;
 
     private Stage    modalStage;
@@ -94,17 +89,12 @@ public class FormProcces {
         txtNombre         = campo(null);
         txtTiempo         = campo("Ej: 5");     soloNumeros(txtTiempo);
         txtTamanioMemoria = campo("Ej: 128");   soloNumeros(txtTamanioMemoria);
-        cmbParticiones    = new ComboBox<>();
-        cmbParticiones.setMaxWidth(Double.MAX_VALUE);
-        cmbParticiones.setPromptText("Seleccione...");
-        configurarComboParticiones(cmbParticiones);
 
         GridPane gridIzq = panelGrid(160);
         int fi = 0;
         agregarFila(gridIzq, fi++, "Nombre:",                 txtNombre);
         agregarFila(gridIzq, fi++, "Tiempo (seg):",           txtTiempo);
         agregarFila(gridIzq, fi++, "Tamano en Memoria (u):", txtTamanioMemoria);
-        agregarFila(gridIzq, fi++, "Asignar a Partición:",     cmbParticiones);
 
         VBox colIzq = new VBox(10,
             seccion("DATOS BASICOS"),
@@ -245,7 +235,6 @@ public class FormProcces {
         txtNombre.clear();
         txtTiempo.clear();
         txtTamanioMemoria.clear();
-        resetCombo(cmbParticiones);
         resetCombo(cmbBloqueable);
         // Quitamos el requestFocus() de aquí, porque lo pasamos al evento setOnShown de arriba
     }
@@ -254,16 +243,7 @@ public class FormProcces {
     public String  getNombre()            { return txtNombre.getText().trim(); }
     public String  getTiempo()            { return txtTiempo.getText().trim(); }
     public String  getTamanioMemoria()    { return txtTamanioMemoria.getText().trim(); }
-    public Particion getParticionSeleccionada() { return cmbParticiones.getValue(); }
     public boolean isPasaPorBloqueado()   { return SI.equals(cmbBloqueable.getValue()); }
-
-    public void cargarParticiones(List<Particion> particiones) {
-        ObservableList<Particion> items = FXCollections.observableArrayList(particiones);
-        cmbParticiones.setItems(items);
-        cmbParticiones.setButtonCell(crearCellParticion());
-        cmbParticiones.setCellFactory(list -> crearCellParticion());
-        cmbParticiones.setPromptText(items.isEmpty() ? "Sin particiones" : "Seleccione...");
-    }
 
     public Stage getModalStage() { return modalStage; }
 
@@ -296,22 +276,6 @@ public class FormProcces {
         cb.setPromptText("Seleccione...");
         cb.setMaxWidth(Double.MAX_VALUE);
         return cb;
-    }
-
-    private void configurarComboParticiones(ComboBox<Particion> comboBox) {
-        comboBox.setMaxWidth(Double.MAX_VALUE);
-        comboBox.setButtonCell(crearCellParticion());
-        comboBox.setCellFactory(list -> crearCellParticion());
-    }
-
-    private ListCell<Particion> crearCellParticion() {
-        return new ListCell<>() {
-            @Override
-            protected void updateItem(Particion item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.toString());
-            }
-        };
     }
 
     private <T> void resetCombo(ComboBox<T> cb) {

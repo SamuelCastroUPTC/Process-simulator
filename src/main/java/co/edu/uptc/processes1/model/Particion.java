@@ -10,6 +10,7 @@ public class Particion {
     private String nombre;
     private final int tamanoTotal;
     private final List<Proceso> procesosAlojados;
+    private boolean ocupada = false;
 
     public Particion(int id, String nombre, int tamanoTotal) {
         this.id = id;
@@ -35,7 +36,19 @@ public class Particion {
     }
 
     public int getEspacioDisponible() {
-        return tamanoTotal;
+        return ocupada ? 0 : tamanoTotal;
+    }
+
+    public boolean estaDisponible(int tamanioRequerido) {
+        return !ocupada && tamanioRequerido <= tamanoTotal;
+    }
+
+    public void ocupar() {
+        this.ocupada = true;
+    }
+
+    public void liberar() {
+        this.ocupada = false;
     }
 
     public List<Proceso> getProcesosAlojados() {
@@ -54,6 +67,7 @@ public class Particion {
             return;
         }
         procesosAlojados.add(proceso);
+        ocupar();
     }
 
     public void removerProceso(Proceso proceso) {
@@ -61,10 +75,14 @@ public class Particion {
             return;
         }
         procesosAlojados.remove(proceso);
+        if (procesosAlojados.isEmpty()) {
+            liberar();
+        }
     }
 
     public void liberarProceso() {
         procesosAlojados.clear();
+        liberar();
     }
 
     @Override
