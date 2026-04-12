@@ -4,7 +4,9 @@ import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Motor de simulacion Round Robin con flujo secuencial determinista.
@@ -19,6 +21,8 @@ public class MotorSimulacion {
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales) {
         RegistroSimulacion registro = new RegistroSimulacion();
         List<ProcesoRuntime> colaListos = new ArrayList<>();
+        Set<Integer> registradosEnProcesador = new HashSet<>();
+        Set<Integer> registradosEnListo = new HashSet<>();
 
         for (Proceso proceso : procesosIniciales) {
             ProcesoRuntime runtime = ProcesoRuntime.desde(proceso);
@@ -32,7 +36,9 @@ public class MotorSimulacion {
                 continue;
             }
             colaListos.add(runtime);
-            registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
+            if (registradosEnListo.add(runtime.id)) {
+                registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
+            }
         }
 
         while (!colaListos.isEmpty()) {
@@ -43,9 +49,12 @@ public class MotorSimulacion {
 
             registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
 
+            if (registradosEnProcesador.add(actual.id)) {
+                registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, actual.tiempoRestante);
+            }
+
             long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
             long tiempoRestante = Math.max(0L, actual.tiempoRestante - rafaga);
-            registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoRestante);
             actual.tiempoRestante = tiempoRestante;
 
             if (actual.tiempoRestante <= 0L) {
@@ -57,13 +66,17 @@ public class MotorSimulacion {
                 registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
                 registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
                 registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
-                registrarEstado(registro, RegistroSimulacion.INICIO, actual);
+                if (registradosEnListo.add(actual.id)) {
+                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
+                }
                 colaListos.add(actual);
                 continue;
             }
 
             registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
-            registrarEstado(registro, RegistroSimulacion.INICIO, actual);
+            if (registradosEnListo.add(actual.id)) {
+                registrarEstado(registro, RegistroSimulacion.INICIO, actual);
+            }
             colaListos.add(actual);
         }
 
