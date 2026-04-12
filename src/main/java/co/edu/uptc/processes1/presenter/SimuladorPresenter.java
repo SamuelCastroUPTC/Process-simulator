@@ -6,10 +6,12 @@ import co.edu.uptc.processes1.view.IView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class SimuladorPresenter implements IPresenter {
 
@@ -30,6 +32,7 @@ public class SimuladorPresenter implements IPresenter {
         RegistroSimulacion.BLOQUEAR,
         RegistroSimulacion.BLOQUEADO,
         RegistroSimulacion.DESPERTAR,
+        RegistroSimulacion.NO_EJECUTADO,
         RegistroSimulacion.FINALIZADO
     );
 
@@ -62,7 +65,7 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void agregarProceso(
         String nombre,
-        int tiempo,
+        long tiempo,
         int tamanioMemoria,
         boolean pasaPorBloqueado,
         Particion particionSeleccionada
@@ -80,10 +83,12 @@ public class SimuladorPresenter implements IPresenter {
             pasaPorBloqueado
         );
         nuevo.setParticion(particionSeleccionada);
-        particionSeleccionada.agregarProceso(nuevo);
+        if (particionSeleccionada != null) {
+            particionSeleccionada.agregarProceso(nuevo);
+        }
         procesosCargados.add(nuevo);
 
-        // Al cargar exitosamente, se registra inmediatamente en Inicio.
+        // Al cargar exitosamente, se registra inmediatamente en Listo.
         historialesPorEstado.computeIfAbsent(RegistroSimulacion.INICIO, key -> new ArrayList<>())
             .add(nuevo.copiar());
 
@@ -126,7 +131,11 @@ public class SimuladorPresenter implements IPresenter {
         view.setBtnIniciarHabilitado(false);
         view.actualizarEstadoSimulacion("Simulacion en progreso...");
 
-        ultimoRegistro = motorSimulacion.ejecutar(procesosCargados);
+        List<Proceso> procesosOrdenados = procesosCargados.stream()
+            .sorted(Comparator.comparingLong(Proceso::getTiempoRestante))
+            .collect(Collectors.toList());
+
+        ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados);
         sincronizarHistorialesConRegistro(ultimoRegistro);
 
         procesosCargados.clear();
@@ -163,9 +172,9 @@ public class SimuladorPresenter implements IPresenter {
 
         long tiempoSegundos;
         try {
-            tiempoSegundos = Integer.parseInt(tiempoStr);
+            tiempoSegundos = Long.parseLong(tiempoStr);
         } catch (NumberFormatException ex) {
-            view.mostrarError("El tiempo ingresado es demasiado largo. Ingrese un valor menor a 9999");
+            view.mostrarError("El tiempo ingresado no es valido o es demasiado largo.");
             return;
         }
 
@@ -174,16 +183,11 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        if (tiempoSegundos > 9999) {
-            view.mostrarError("El tiempo ingresado es demasiado largo. Ingrese un valor menor a 9999");
-            return;
-        }
-
-        int tiempo;
+        long tiempo;
         try {
-            tiempo = Math.toIntExact(tiempoSegundos * 1000L);
+            tiempo = Math.multiplyExact(tiempoSegundos, 1000L);
         } catch (ArithmeticException ex) {
-            view.mostrarError("El tiempo ingresado es demasiado largo. Ingrese un valor menor a 9999");
+            view.mostrarError("El tiempo ingresado no es valido o es demasiado largo.");
             return;
         }
 
@@ -205,18 +209,8 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        if (particionSeleccionada == null) {
-            view.mostrarError("Es obligatorio seleccionar una partición.");
-            return;
-        }
-
-        if (tamanioMemoria > particionSeleccionada.getTamanoTotal()) {
+        if (particionSeleccionada != null && tamanioMemoria > particionSeleccionada.getTamanoTotal()) {
             view.mostrarError("El tamaño de memoria del proceso no puede superar el tamaño total de la partición seleccionada.");
-            return;
-        }
-
-        if (nombre.length() > 50) {
-            view.mostrarError("El nombre no puede superar los 50 caracteres.");
             return;
         }
 
@@ -295,13 +289,14 @@ public class SimuladorPresenter implements IPresenter {
 
         String estadoNormalizado = estado.trim();
         return switch (estadoNormalizado.toLowerCase()) {
-            case "inicio", "listos" -> RegistroSimulacion.INICIO;
+            case "inicio", "listo", "listos" -> RegistroSimulacion.INICIO;
             case "despachar", "despacho" -> RegistroSimulacion.DESPACHAR;
             case "procesador" -> RegistroSimulacion.PROCESADOR;
             case "expiracion de tiempo", "expiracion", "expiracion de", "expiración de tiempo", "expiración" -> RegistroSimulacion.EXPIRACION_TIEMPO;
             case "bloquear" -> RegistroSimulacion.BLOQUEAR;
             case "bloqueado", "bloqueo" -> RegistroSimulacion.BLOQUEADO;
             case "despertar" -> RegistroSimulacion.DESPERTAR;
+            case "no ejecutado" -> RegistroSimulacion.NO_EJECUTADO;
             case "salida", "finalizado" -> RegistroSimulacion.FINALIZADO;
             default -> estado;
         };

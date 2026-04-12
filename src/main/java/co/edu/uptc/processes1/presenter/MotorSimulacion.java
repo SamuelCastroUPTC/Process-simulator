@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class MotorSimulacion {
 
-    private static final int QUANTUM = 5000;
+    private static final long QUANTUM = 5000L;
 
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales) {
         RegistroSimulacion registro = new RegistroSimulacion();
@@ -22,6 +22,10 @@ public class MotorSimulacion {
 
         for (Proceso proceso : procesosIniciales) {
             ProcesoRuntime runtime = ProcesoRuntime.desde(proceso);
+            if (runtime.particion == null) {
+                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, runtime);
+                continue;
+            }
             colaListos.add(runtime);
             registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
         }
@@ -34,13 +38,13 @@ public class MotorSimulacion {
 
             registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
 
-            int rafaga = Math.min(QUANTUM, actual.tiempoRestante);
-            int tiempoRestante = Math.max(0, actual.tiempoRestante - rafaga);
+            long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
+            long tiempoRestante = Math.max(0L, actual.tiempoRestante - rafaga);
             registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoRestante);
             actual.tiempoRestante = tiempoRestante;
 
-            if (actual.tiempoRestante <= 0) {
-                registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0);
+            if (actual.tiempoRestante <= 0L) {
+                registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
                 continue;
             }
 
@@ -72,7 +76,7 @@ public class MotorSimulacion {
         registrarEstado(registro, estado, runtime, runtime.tiempoRestante);
     }
 
-    private void registrarEstado(RegistroSimulacion registro, String estado, ProcesoRuntime runtime, int tiempoSnapshot) {
+    private void registrarEstado(RegistroSimulacion registro, String estado, ProcesoRuntime runtime, long tiempoSnapshot) {
         Proceso snapshot = new Proceso(
             runtime.id,
             runtime.nombre,
@@ -92,12 +96,12 @@ public class MotorSimulacion {
         private final int tamanioMemoria;
         private final boolean pasaPorBloqueado;
         private final Particion particion;
-        private int tiempoRestante;
+        private long tiempoRestante;
 
         private ProcesoRuntime(
             int id,
             String nombre,
-            int tiempoRestante,
+            long tiempoRestante,
             int tamanioMemoria,
             boolean pasaPorBloqueado,
             Particion particion

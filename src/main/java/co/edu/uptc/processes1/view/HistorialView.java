@@ -43,13 +43,14 @@ public class HistorialView {
     private static final String ESTADO_FINALIZADO = RegistroSimulacion.FINALIZADO;
 
     private static final Map<String, MetaEstado> META_ESTADO = Map.ofEntries(
-        Map.entry("Inicio",               new MetaEstado("#A8C5A0", "Procesos que iniciaron la simulacion")),
+        Map.entry(RegistroSimulacion.INICIO, new MetaEstado("#A8C5A0", "Procesos que iniciaron la simulacion")),
         Map.entry("Despachar",            new MetaEstado("#7B9EA6", "Procesos despachados al procesador")),
         Map.entry("Procesador",           new MetaEstado("#D4B896", "Procesos en ejecucion en el CPU")),
         Map.entry("Expiracion de tiempo", new MetaEstado("#D4A06A", "Procesos que expiraron su quantum")),
         Map.entry("Bloquear",             new MetaEstado("#E8A598", "Procesos enviados al estado bloqueado")),
         Map.entry("Bloqueado",            new MetaEstado("#B8A8C8", "Procesos en estado bloqueado")),
         Map.entry("Despertar",            new MetaEstado("#98C8D4", "Procesos despertados desde el bloqueo")),
+        Map.entry(RegistroSimulacion.NO_EJECUTADO, new MetaEstado("#CCCCCC", "Procesos sin partición asignada que no entraron a simulación")),
         Map.entry(ESTADO_FINALIZADO,      new MetaEstado("#AAAAAA", "Procesos que finalizaron su ejecucion"))
     );
 
@@ -188,15 +189,15 @@ public class HistorialView {
 
         boolean esFinalizado = ESTADO_FINALIZADO.equalsIgnoreCase(estado);
         if (!esFinalizado) {
-            TableColumn<Proceso, Integer> colTiempo = new TableColumn<>("Tiempo (s)");
+            TableColumn<Proceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
             colTiempo.setCellValueFactory(new PropertyValueFactory<>("tiempo"));
             colTiempo.setPrefWidth(140);
             colTiempo.setCellFactory(col -> new TableCell<>() {
                 @Override
-                protected void updateItem(Integer item, boolean empty) {
+                protected void updateItem(Long item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty || item == null) { setText(null); return; }
-                    setText(String.valueOf(item / 1000));
+                    setText(String.valueOf(item / 1000L));
                 }
             });
             tv.getColumns().add(colTiempo);

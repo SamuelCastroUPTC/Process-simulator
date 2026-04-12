@@ -2,6 +2,7 @@ package co.edu.uptc.processes1.view;
 
 import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
+import co.edu.uptc.processes1.presenter.RegistroSimulacion;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -43,8 +44,9 @@ public class MainView implements IView {
     private double dragOffsetX, dragOffsetY;
 
     private static final String[] ESTADOS_HISTORIAL = {
-        "Inicio", "Despachar", "Procesador", "Expiracion de tiempo",
-        "Bloquear", "Bloqueado", "Despertar", "Salida"
+        RegistroSimulacion.INICIO, "Despachar", "Procesador",
+        "Expiracion de tiempo", "Bloquear", "Bloqueado",
+        "Despertar", RegistroSimulacion.NO_EJECUTADO, "Salida"
     };
 
     // ── Constructor ───────────────────────────────────────────────────────────
@@ -318,15 +320,15 @@ public class MainView implements IView {
         colNombre.setMinWidth(120);
         colNombre.setMaxWidth(Double.MAX_VALUE);   // absorbe el espacio sobrante
 
-        TableColumn<Proceso, Integer> colTiempo = new TableColumn<>("Tiempo (s)");
+        TableColumn<Proceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
         colTiempo.setCellValueFactory(new PropertyValueFactory<>("tiempo"));
         colTiempo.setPrefWidth(100);
         colTiempo.setMinWidth(100);
         colTiempo.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(Integer item, boolean empty) {
+            @Override protected void updateItem(Long item, boolean empty) {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null
-                    : String.valueOf((int) Math.ceil(item / 1000.0)));
+                    : String.valueOf(item / 1000L));
             }
         });
 
@@ -448,7 +450,7 @@ public class MainView implements IView {
         return card;
     }
 
-    // ══════════════════ INF-DER: 8 botones de historial ══════════════════════
+    // ══════════════════ INF-DER: 9 botones de historial ══════════════════════
 
     private VBox construirCuadranteHistoriales() {
         Label lblTitulo = new Label("Historial de Estados");
@@ -476,16 +478,16 @@ public class MainView implements IView {
         grid.setMaxWidth(Double.MAX_VALUE);
         grid.setMaxHeight(Double.MAX_VALUE);
 
-        final int COLS = 4;
+        final int COLS = 3;
         for (int c = 0; c < COLS; c++) {
             ColumnConstraints cc = new ColumnConstraints();
             cc.setPercentWidth(100.0 / COLS);
             cc.setHgrow(Priority.ALWAYS);
             grid.getColumnConstraints().add(cc);
         }
-        for (int r = 0; r < 2; r++) {
+        for (int r = 0; r < 3; r++) {
             RowConstraints rc = new RowConstraints();
-            rc.setPercentHeight(50);
+            rc.setPercentHeight(100.0 / 3.0);
             rc.setVgrow(Priority.ALWAYS);
             grid.getRowConstraints().add(rc);
         }

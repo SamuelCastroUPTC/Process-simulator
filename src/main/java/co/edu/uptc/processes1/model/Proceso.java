@@ -2,8 +2,10 @@ package co.edu.uptc.processes1.model;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
@@ -11,7 +13,7 @@ public class Proceso {
 
     private final IntegerProperty id;
     private final StringProperty nombre;
-    private final IntegerProperty tiempoRestante;
+    private final LongProperty tiempoRestante;
     private final IntegerProperty tamanioMemoria;
     private final BooleanProperty pasaPorBloqueado;
     private final StringProperty estadoActual;
@@ -20,30 +22,30 @@ public class Proceso {
     public Proceso(
         int id,
         String nombre,
-        int tiempoRestante,
+        long tiempoRestante,
         int tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         this.id = new SimpleIntegerProperty(id);
         this.nombre = new SimpleStringProperty(nombre);
-        this.tiempoRestante = new SimpleIntegerProperty(tiempoRestante);
+        this.tiempoRestante = new SimpleLongProperty(tiempoRestante);
         this.tamanioMemoria = new SimpleIntegerProperty(tamanioMemoria);
         this.pasaPorBloqueado = new SimpleBooleanProperty(pasaPorBloqueado);
-        this.estadoActual = new SimpleStringProperty("Inicio");
+        this.estadoActual = new SimpleStringProperty("Listo");
         this.particion = null;
     }
 
-    public Proceso(int id, String nombre, int tiempoRestante, int tamanioMemoria) {
+    public Proceso(int id, String nombre, long tiempoRestante, int tamanioMemoria) {
         this(id, nombre, tiempoRestante, tamanioMemoria, false);
     }
 
-    public Proceso(String nombre, int tiempoRestante, int tamanioMemoria) {
+    public Proceso(String nombre, long tiempoRestante, int tamanioMemoria) {
         this(0, nombre, tiempoRestante, tamanioMemoria);
     }
 
     public Proceso(
         String nombre,
-        int tiempoRestante,
+        long tiempoRestante,
         int tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
@@ -58,11 +60,11 @@ public class Proceso {
         return nombre.get();
     }
 
-    public int getTiempoRestante() {
+    public long getTiempoRestante() {
         return tiempoRestante.get();
     }
 
-    public int getTiempo() {
+    public long getTiempo() {
         return getTiempoRestante();
     }
 
@@ -82,11 +84,11 @@ public class Proceso {
         return particion;
     }
 
-    public void setTiempoRestante(int tiempoRestante) {
+    public void setTiempoRestante(long tiempoRestante) {
         this.tiempoRestante.set(tiempoRestante);
     }
 
-    public void setTiempo(int tiempo) {
+    public void setTiempo(long tiempo) {
         setTiempoRestante(tiempo);
     }
 
@@ -110,11 +112,11 @@ public class Proceso {
         return nombre;
     }
 
-    public IntegerProperty tiempoRestanteProperty() {
+    public LongProperty tiempoRestanteProperty() {
         return tiempoRestante;
     }
 
-    public IntegerProperty tiempoProperty() {
+    public LongProperty tiempoProperty() {
         return tiempoRestante;
     }
 
@@ -145,6 +147,6 @@ public class Proceso {
 
     @Override
     public String toString() {
-        return String.format("%s (%d)", getNombre(), getTiempoRestante() / 1000);
+        return String.format("%s (%d)", getNombre(), getTiempoRestante() / 1000L);
     }
 }

@@ -16,13 +16,14 @@ import java.util.Map;
  */
 public class RegistroSimulacion {
 
-    public static final String INICIO = "Inicio";
+    public static final String INICIO = "Listo";
     public static final String DESPACHAR = "Despachar";
     public static final String PROCESADOR = "Procesador";
     public static final String EXPIRACION_TIEMPO = "Expiracion de tiempo";
     public static final String BLOQUEAR = "Bloquear";
     public static final String BLOQUEADO = "Bloqueado";
     public static final String DESPERTAR = "Despertar";
+    public static final String NO_EJECUTADO = "No Ejecutado";
     public static final String FINALIZADO = "Salida";
 
     private static final List<String> ESTADOS = List.of(
@@ -33,6 +34,7 @@ public class RegistroSimulacion {
         BLOQUEAR,
         BLOQUEADO,
         DESPERTAR,
+        NO_EJECUTADO,
         FINALIZADO
     );
 

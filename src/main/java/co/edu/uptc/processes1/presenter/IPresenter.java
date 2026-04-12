@@ -19,7 +19,7 @@ public interface IPresenter {
      */
     void agregarProceso(
         String nombre,
-        int tiempo,
+        long tiempo,
         int tamanioMemoria,
         boolean pasaPorBloqueado,
         Particion particionSeleccionada
