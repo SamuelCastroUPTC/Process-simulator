@@ -83,9 +83,15 @@ public class SimuladorPresenter implements IPresenter {
             pasaPorBloqueado
         );
         nuevo.setParticion(particionSeleccionada);
-        if (particionSeleccionada != null) {
+        
+        // Si el proceso excede el tamaño de la partición, marcarlo pero no agregarlo a la partición
+        if (tamanioMemoria > particionSeleccionada.getTamanoTotal()) {
+            nuevo.setExcedeTamanoParticion(true);
+        } else {
+            // Si cabe en la partición, agregarlo normalmente
             particionSeleccionada.agregarProceso(nuevo);
         }
+        
         procesosCargados.add(nuevo);
 
         // Al cargar exitosamente, se registra inmediatamente en Listo.
@@ -209,8 +215,8 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        if (particionSeleccionada != null && tamanioMemoria > particionSeleccionada.getTamanoTotal()) {
-            view.mostrarError("El tamaño de memoria del proceso no puede superar el tamaño total de la partición seleccionada.");
+        if (particionSeleccionada == null) {
+            view.mostrarError("Es obligatorio seleccionar una partición.");
             return;
         }
 

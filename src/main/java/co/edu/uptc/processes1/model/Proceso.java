@@ -17,6 +17,7 @@ public class Proceso {
     private final IntegerProperty tamanioMemoria;
     private final BooleanProperty pasaPorBloqueado;
     private final StringProperty estadoActual;
+    private final BooleanProperty excedeTamanoParticion;
     private Particion particion;
 
     public Proceso(
@@ -32,6 +33,7 @@ public class Proceso {
         this.tamanioMemoria = new SimpleIntegerProperty(tamanioMemoria);
         this.pasaPorBloqueado = new SimpleBooleanProperty(pasaPorBloqueado);
         this.estadoActual = new SimpleStringProperty("Listo");
+        this.excedeTamanoParticion = new SimpleBooleanProperty(false);
         this.particion = null;
     }
 
@@ -104,6 +106,18 @@ public class Proceso {
         this.particion = particion;
     }
 
+    public boolean isExcedeTamanoParticion() {
+        return excedeTamanoParticion.get();
+    }
+
+    public void setExcedeTamanoParticion(boolean excedeTamanoParticion) {
+        this.excedeTamanoParticion.set(excedeTamanoParticion);
+    }
+
+    public BooleanProperty excedeTamanoParticionProperty() {
+        return excedeTamanoParticion;
+    }
+
     public IntegerProperty idProperty() {
         return id;
     }
@@ -142,6 +156,7 @@ public class Proceso {
         );
         copia.setEstadoActual(getEstadoActual());
         copia.setParticion(getParticion());
+        copia.setExcedeTamanoParticion(isExcedeTamanoParticion());
         return copia;
     }
 
