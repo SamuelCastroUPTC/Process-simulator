@@ -15,7 +15,6 @@ import java.util.List;
 public class MotorSimulacion {
 
     private static final long QUANTUM = 5000L;
-    private static final int MAX_ITERACIONES = 100_000;
 
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales) {
         RegistroSimulacion registro = new RegistroSimulacion();
@@ -36,14 +35,7 @@ public class MotorSimulacion {
             registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
         }
 
-        // 2A: Contador de iteraciones de seguridad
-        int iteraciones = 0;
         while (!colaListos.isEmpty()) {
-            iteraciones++;
-            if (iteraciones > MAX_ITERACIONES) {
-                registro.registrarTexto("Salida", "Simulacion interrumpida por seguridad: demasiadas iteraciones.");
-                break;
-            }
             ProcesoRuntime actual = extraerSiguiente(colaListos);
             if (actual == null) {
                 continue;

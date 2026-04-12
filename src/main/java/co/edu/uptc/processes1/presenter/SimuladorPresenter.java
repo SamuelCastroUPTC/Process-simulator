@@ -101,7 +101,13 @@ public class SimuladorPresenter implements IPresenter {
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
         view.limpiarFormularioCarga();
-        view.mostrarExito("Proceso '" + nombre + "' cargado correctamente.");
+        if (nuevo.isExcedeTamanoParticion()) {
+            view.mostrarAviso("El proceso '" + nombre +
+                "' fue cargado, pero no se ejecutara porque su tamano " +
+                "supera el de la particion asignada.");
+        } else {
+            view.mostrarExito("Proceso '" + nombre + "' cargado correctamente.");
+        }
     }
 
     @Override
