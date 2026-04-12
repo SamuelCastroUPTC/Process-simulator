@@ -1,0 +1,482 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   simulador.css  —  Paleta pastel moderna & minimalista
+   JavaFX CSS Reference: https://openjfx.io/javadoc/21/javafx.graphics/javafx/scene/doc-files/cssref.html
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Variables de color (simuladas con literales repetidos) ──────────────── */
+/* Fondo principal    : #F7F3EF  (crema cálido)                               */
+/* Fondo panel        : #FFFFFF                                               */
+/* Acento primario    : #7B9EA6  (azul grisáceo pastel)                       */
+/* Acento secundario  : #A8C5A0  (verde salvia pastel)                        */
+/* Peligro / Error    : #E8A598  (coral pastel)                               */
+/* Texto principal    : #3D3D3D                                               */
+/* Texto suave        : #7A7A7A                                               */
+/* Borde suave        : #DDD8D3                                               */
+
+/* ══════════════════ ROOT / ESCENA ══════════════════════════════════════════ */
+.root {
+    -fx-background-color: #F7F3EF;
+    -fx-font-family: "Segoe UI", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #3D3D3D;
+}
+
+/* ══════════════════ VENTANA PRINCIPAL ══════════════════════════════════════ */
+.ventana-principal {
+    -fx-background-color: #F7F3EF;
+}
+
+/* ══════════════════ BARRA DE TÍTULO PERSONALIZADA ══════════════════════════ */
+.barra-titulo {
+    -fx-background-color: #7B9EA6;
+    -fx-padding: 12 20 12 20;
+}
+
+.titulo-app {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 1.5px;
+}
+
+.subtitulo-app {
+    -fx-text-fill: rgba(255,255,255,0.75);
+    -fx-font-size: 12px;
+}
+
+/* ══════════════════ PANELES / TARJETAS ══════════════════════════════════════ */
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #DDD8D3;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);
+    -fx-padding: 20;
+}
+
+.card-titulo {
+    -fx-text-fill: #3D3D3D;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.card-subtitulo {
+    -fx-text-fill: #7A7A7A;
+    -fx-font-size: 12px;
+}
+
+/* ══════════════════ ETIQUETAS ═══════════════════════════════════════════════ */
+.label {
+    -fx-text-fill: #3D3D3D;
+}
+
+.label-campo {
+    -fx-text-fill: #7A7A7A;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.label-estado {
+    -fx-text-fill: #7B9EA6;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* ══════════════════ CAMPOS DE TEXTO ════════════════════════════════════════ */
+.text-field,
+.text-field:focused {
+    -fx-background-color: #F7F3EF;
+    -fx-background-radius: 8;
+    -fx-border-color: #DDD8D3;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 10 14 10 14;
+    -fx-text-fill: #3D3D3D;
+    -fx-prompt-text-fill: #BBBBBB;
+    -fx-font-size: 14px;
+}
+
+.text-field:focused {
+    -fx-border-color: #7B9EA6;
+    -fx-effect: dropshadow(gaussian, rgba(123,158,166,0.25), 6, 0, 0, 0);
+}
+
+/* ══════════════════ COMBO BOX ══════════════════════════════════════════════ */
+.combo-box {
+    -fx-background-color: #F7F3EF;
+    -fx-background-radius: 8;
+    -fx-border-color: #DDD8D3;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 6 10 6 10;
+    -fx-font-size: 14px;
+}
+
+.combo-box:focused {
+    -fx-border-color: #7B9EA6;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: #3D3D3D;
+    -fx-background-color: transparent;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #DDD8D3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 4);
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #EEF5F7;
+}
+
+/* ══════════════════ BOTONES ════════════════════════════════════════════════ */
+
+/* ── Botón Primario (azul pastel) ── */
+.btn-primario {
+    -fx-background-color: #7B9EA6;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 12 24 12 24;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(123,158,166,0.35), 8, 0, 0, 3);
+}
+
+.btn-primario:hover {
+    -fx-background-color: #6A8F98;
+    -fx-effect: dropshadow(gaussian, rgba(123,158,166,0.50), 12, 0, 0, 4);
+}
+
+.btn-primario:pressed {
+    -fx-background-color: #5A7F88;
+    -fx-effect: none;
+    -fx-translate-y: 1;
+}
+
+.btn-primario:disabled {
+    -fx-background-color: #C8D8DC;
+    -fx-text-fill: rgba(255,255,255,0.6);
+    -fx-effect: none;
+    -fx-cursor: default;
+}
+
+/* ── Botón Iniciar Simulación (verde salvia — destacado) ── */
+.btn-iniciar {
+    -fx-background-color: #A8C5A0;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 14;
+    -fx-padding: 18 40 18 40;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(168,197,160,0.45), 14, 0, 0, 5);
+    -fx-letter-spacing: 0.5px;
+}
+
+.btn-iniciar:hover {
+    -fx-background-color: #95B58E;
+    -fx-effect: dropshadow(gaussian, rgba(168,197,160,0.60), 18, 0, 0, 6);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.btn-iniciar:pressed {
+    -fx-background-color: #82A57B;
+    -fx-effect: none;
+    -fx-scale-x: 0.99;
+    -fx-scale-y: 0.99;
+}
+
+.btn-iniciar:disabled {
+    -fx-background-color: #C8DCC4;
+    -fx-text-fill: rgba(255,255,255,0.55);
+    -fx-effect: none;
+    -fx-cursor: default;
+}
+
+/* ── Botones de Historial (8 estados) ── */
+.btn-historial {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #5A7A85;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-border-color: #B8D4DA;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 10;
+    -fx-padding: 12 16 12 16;
+    -fx-cursor: hand;
+}
+
+.btn-historial:hover {
+    -fx-background-color: #EEF5F7;
+    -fx-border-color: #7B9EA6;
+    -fx-effect: dropshadow(gaussian, rgba(123,158,166,0.20), 6, 0, 0, 2);
+}
+
+.btn-historial:pressed {
+    -fx-background-color: #D8ECF0;
+    -fx-translate-y: 1;
+}
+
+/* ── Botón Salir (coral pastel) ── */
+.btn-salir {
+    -fx-background-color: transparent;
+    -fx-text-fill: #E8A598;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-border-color: #E8A598;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 8 18 8 18;
+    -fx-cursor: hand;
+}
+
+.btn-salir:hover {
+    -fx-background-color: #E8A598;
+    -fx-text-fill: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(232,165,152,0.40), 8, 0, 0, 2);
+}
+
+.btn-salir:pressed {
+    -fx-background-color: #D4917F;
+    -fx-text-fill: #FFFFFF;
+}
+
+/* ── Botón Volver (en ventanas de historial) ── */
+.btn-volver {
+    -fx-background-color: #7B9EA6;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 14;
+    -fx-padding: 20 60 20 60;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(123,158,166,0.40), 14, 0, 0, 4);
+}
+
+.btn-volver:hover {
+    -fx-background-color: #6A8F98;
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+}
+
+.btn-volver:pressed {
+    -fx-background-color: #5A7F88;
+    -fx-scale-x: 0.99;
+    -fx-scale-y: 0.99;
+}
+
+/* ── Botón Modal Confirmar ── */
+.btn-modal-ok {
+    -fx-background-color: #7B9EA6;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 12 32 12 32;
+    -fx-cursor: hand;
+}
+
+.btn-modal-ok:hover {
+    -fx-background-color: #6A8F98;
+}
+
+/* ══════════════════ TABLE VIEW ═════════════════════════════════════════════ */
+.table-view {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 10;
+    -fx-border-color: #DDD8D3;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-table-cell-border-color: #EEE9E4;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #EEF5F7;
+    -fx-background-radius: 10 10 0 0;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent #DDD8D3 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 12 16 12 16;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #5A7A85;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER-LEFT;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent #EEE9E4 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #FAFAF8;
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: #EEF5F7;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: #D4EBF0;
+}
+
+.table-view .table-row-cell:selected .text {
+    -fx-fill: #3D3D3D;
+}
+
+.table-view .table-cell {
+    -fx-padding: 10 16 10 16;
+    -fx-text-fill: #3D3D3D;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER-LEFT;
+}
+
+/* Placeholder cuando la tabla está vacía */
+.table-view .placeholder {
+    -fx-background-color: #FFFFFF;
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: #BBBBBB;
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+}
+
+/* Scrollbar de la tabla */
+.table-view .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+
+.table-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #C8D8DC;
+    -fx-background-radius: 4;
+}
+
+.table-view .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #7B9EA6;
+}
+
+/* ══════════════════ SEPARADORES ═════════════════════════════════════════════ */
+.separator {
+    -fx-background-color: #DDD8D3;
+}
+
+.separator .line {
+    -fx-border-color: #DDD8D3;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ══════════════════ MODALES ═════════════════════════════════════════════════ */
+.modal-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.35);
+}
+
+.modal-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-color: #DDD8D3;
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 24, 0, 0, 8);
+    -fx-padding: 32 36 32 36;
+}
+
+.modal-titulo-error {
+    -fx-text-fill: #D4776A;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.modal-titulo-exito {
+    -fx-text-fill: #7EAD75;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.modal-mensaje {
+    -fx-text-fill: #5A5A5A;
+    -fx-font-size: 14px;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
+}
+
+/* ══════════════════ VENTANA HISTORIAL ═══════════════════════════════════════ */
+.historial-root {
+    -fx-background-color: #F0F7F9;
+}
+
+.historial-barra {
+    -fx-background-color: #7B9EA6;
+    -fx-padding: 20 30 20 30;
+}
+
+.historial-titulo {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.historial-subtitulo {
+    -fx-text-fill: rgba(255,255,255,0.75);
+    -fx-font-size: 14px;
+}
+
+.historial-contador {
+    -fx-background-color: rgba(255,255,255,0.20);
+    -fx-background-radius: 20;
+    -fx-padding: 6 16 6 16;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* ══════════════════ BADGE DE ESTADO ═════════════════════════════════════════ */
+.badge-nuevo       { -fx-background-color: #D4EBF0; -fx-text-fill: #5A7A85; }
+.badge-listo       { -fx-background-color: #D4EDD0; -fx-text-fill: #5A8550; }
+.badge-procesador  { -fx-background-color: #F0E8C8; -fx-text-fill: #8A7040; }
+.badge-bloqueado   { -fx-background-color: #F5D8D4; -fx-text-fill: #8A4A40; }
+.badge-terminado   { -fx-background-color: #E8E8E8; -fx-text-fill: #606060; }
+
+.badge-nuevo, .badge-listo, .badge-procesador, .badge-bloqueado, .badge-terminado {
+    -fx-background-radius: 6;
+    -fx-padding: 3 10 3 10;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+/* ══════════════════ ICONO ESTADO SIMULACIÓN ════════════════════════════════ */
+.estado-simulacion-panel {
+    -fx-background-color: #EEF5F7;
+    -fx-background-radius: 10;
+    -fx-padding: 12 18 12 18;
+    -fx-border-color: #C8D8DC;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+}
+
+/* ══════════════════ SCROLL PANE ════════════════════════════════════════════ */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
