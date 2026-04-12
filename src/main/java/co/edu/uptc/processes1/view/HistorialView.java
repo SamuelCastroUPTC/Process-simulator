@@ -1,14 +1,13 @@
 package co.edu.uptc.processes1.view;
 
-import co.edu.uptc.processes1.model.Particion;
-import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.presenter.RegistroSimulacion;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
@@ -66,7 +65,7 @@ public class HistorialView {
     private TabPane tabPane;
 
     /** Referencia a la tabla de la pestaña "Todos", para actualizar sus datos. */
-    private TableView<Proceso> tablaTodos;
+    private TableView<RegistroSimulacion.SnapshotProceso> tablaTodos;
 
     private final String estado;
 
@@ -178,19 +177,18 @@ public class HistorialView {
      *   - Estado "Salida" (finalizado): solo muestra "Nombre".
      *   - Resto de estados:             muestra "Nombre" y "Tiempo (s)".
      */
-    @SuppressWarnings("unchecked")
-    private TableView<Proceso> crearTablaParaEstado() {
-        TableView<Proceso> tv = new TableView<>();
+    private TableView<RegistroSimulacion.SnapshotProceso> crearTablaParaEstado() {
+        TableView<RegistroSimulacion.SnapshotProceso> tv = new TableView<>();
         tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tv.setPlaceholder(new Label("No hay procesos registrados en este estado."));
-        TableColumn<Proceso, String> colNombre = new TableColumn<>("Nombre");
-        colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
+        TableColumn<RegistroSimulacion.SnapshotProceso, String> colNombre = new TableColumn<>("Nombre");
+        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().nombre()));
         tv.getColumns().add(colNombre);
 
         boolean esFinalizado = ESTADO_FINALIZADO.equalsIgnoreCase(estado);
         if (!esFinalizado) {
-            TableColumn<Proceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
-            colTiempo.setCellValueFactory(new PropertyValueFactory<>("tiempo"));
+            TableColumn<RegistroSimulacion.SnapshotProceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
+            colTiempo.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().tiempoRestante()).asObject());
             colTiempo.setPrefWidth(140);
             colTiempo.setCellFactory(col -> new TableCell<>() {
                 @Override
@@ -216,33 +214,29 @@ public class HistorialView {
      *
      * @param datos Lista completa de procesos que pasaron por este estado.
      */
-    public void mostrarConDatos(List<Proceso> datos) {
+    public void mostrarConDatos(List<RegistroSimulacion.SnapshotProceso> datos) {
         tabPane.getTabs().clear();
 
         Tab tabTodos = new Tab("Todos");
-        TableView<Proceso> tablaTodosNueva = crearTablaParaEstado();
+        TableView<RegistroSimulacion.SnapshotProceso> tablaTodosNueva = crearTablaParaEstado();
         tablaTodosNueva.setItems(FXCollections.observableArrayList(datos));
         tabTodos.setContent(envolverTabla(tablaTodosNueva));
         tabTodos.setClosable(false);
         tabPane.getTabs().add(tabTodos);
         this.tablaTodos = tablaTodosNueva;
 
-        Map<String, List<Proceso>> procesosPorParticion = datos.stream()
+        Map<String, List<RegistroSimulacion.SnapshotProceso>> procesosPorParticion = datos.stream()
             .collect(Collectors.groupingBy(
-                proceso -> {
-                    if (proceso == null) {
-                        return "Sin asignar";
-                    }
-                    Particion particion = proceso.getParticion();
-                    return (particion == null) ? "Sin asignar" : particion.getNombre();
-                },
+                proceso -> (proceso == null || proceso.nombreParticion() == null || proceso.nombreParticion().isBlank())
+                    ? "Sin asignar"
+                    : proceso.nombreParticion(),
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
 
         procesosPorParticion.forEach((nombreTab, procesosParticion) -> {
             Tab tabParticion = new Tab(nombreTab);
-            TableView<Proceso> tablaParticion = crearTablaParaEstado();
+            TableView<RegistroSimulacion.SnapshotProceso> tablaParticion = crearTablaParaEstado();
             tablaParticion.setItems(FXCollections.observableArrayList(procesosParticion));
             tabParticion.setContent(envolverTabla(tablaParticion));
             tabParticion.setClosable(false);
@@ -266,7 +260,7 @@ public class HistorialView {
      * @param nombreParticion Nombre de la partición (se usa como título de la pestaña).
      * @param datos           Procesos de esa partición que pasaron por este estado.
      */
-    public void agregarTabParticion(String nombreParticion, List<Proceso> datos) {
+    public void agregarTabParticion(String nombreParticion, List<RegistroSimulacion.SnapshotProceso> datos) {
         // Buscar si ya existe una pestaña con ese nombre
         Tab tabExistente = tabPane.getTabs().stream()
             .filter(t -> nombreParticion.equals(t.getText()))
@@ -276,12 +270,12 @@ public class HistorialView {
         if (tabExistente != null) {
             // Actualizar la tabla ya existente
             @SuppressWarnings("unchecked")
-            TableView<Proceso> tablaExistente =
-                (TableView<Proceso>) ((VBox) tabExistente.getContent()).getChildren().get(0);
+            TableView<RegistroSimulacion.SnapshotProceso> tablaExistente =
+                (TableView<RegistroSimulacion.SnapshotProceso>) ((VBox) tabExistente.getContent()).getChildren().get(0);
             tablaExistente.setItems(FXCollections.observableArrayList(datos));
         } else {
             // Crear nueva pestaña con su propia tabla (fábrica)
-            TableView<Proceso> nuevaTabla = crearTablaParaEstado();
+            TableView<RegistroSimulacion.SnapshotProceso> nuevaTabla = crearTablaParaEstado();
             nuevaTabla.setItems(FXCollections.observableArrayList(datos));
 
             Tab nuevaTab = new Tab(nombreParticion, envolverTabla(nuevaTabla));
@@ -310,7 +304,7 @@ public class HistorialView {
      * Envuelve una tabla en un VBox con el padding y el grow correctos,
      * listo para insertar como contenido de un Tab.
      */
-    private VBox envolverTabla(TableView<Proceso> tabla) {
+    private VBox envolverTabla(TableView<RegistroSimulacion.SnapshotProceso> tabla) {
         VBox wrapper = new VBox(tabla);
         VBox.setVgrow(tabla, Priority.ALWAYS);
         tabla.setMaxHeight(Double.MAX_VALUE);

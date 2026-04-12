@@ -16,6 +16,16 @@ import java.util.Map;
  */
 public class RegistroSimulacion {
 
+    public record SnapshotProceso(
+        int id,
+        String nombre,
+        long tiempoRestante,
+        int tamanioMemoria,
+        boolean pasaPorBloqueado,
+        String estadoActual,
+        String nombreParticion
+    ) {}
+
     public static final String INICIO = "Listo";
     public static final String DESPACHAR = "Despachar";
     public static final String PROCESADOR = "Procesador";
@@ -39,7 +49,7 @@ public class RegistroSimulacion {
     );
 
     private final Map<String, List<String>> historialTexto;
-    private final Map<String, List<Proceso>> historialProcesos;
+    private final Map<String, List<SnapshotProceso>> historialProcesos;
 
     public RegistroSimulacion() {
         this.historialTexto = new LinkedHashMap<>();
@@ -52,7 +62,17 @@ public class RegistroSimulacion {
 
     public void registrar(String estado, Proceso snapshot) {
         historialTexto.computeIfAbsent(estado, key -> new ArrayList<>()).add(snapshot.toString());
-        historialProcesos.computeIfAbsent(estado, key -> new ArrayList<>()).add(snapshot);
+        String nombreParticion = snapshot.getParticion() != null ? snapshot.getParticion().getNombre() : null;
+        SnapshotProceso snapshotLigero = new SnapshotProceso(
+            snapshot.getId(),
+            snapshot.getNombre(),
+            snapshot.getTiempoRestante(),
+            snapshot.getTamanioMemoria(),
+            snapshot.isPasaPorBloqueado(),
+            snapshot.getEstadoActual(),
+            nombreParticion
+        );
+        historialProcesos.computeIfAbsent(estado, key -> new ArrayList<>()).add(snapshotLigero);
     }
 
     public void registrarTexto(String estado, String mensaje) {
@@ -63,7 +83,7 @@ public class RegistroSimulacion {
         return Collections.unmodifiableMap(historialTexto);
     }
 
-    public Map<String, List<Proceso>> getHistorialProcesos() {
+    public Map<String, List<SnapshotProceso>> getHistorialProcesos() {
         return Collections.unmodifiableMap(historialProcesos);
     }
 
@@ -71,7 +91,7 @@ public class RegistroSimulacion {
         return historialTexto.getOrDefault(estado, List.of());
     }
 
-    public List<Proceso> getHistorialProcesos(String estado) {
+    public List<SnapshotProceso> getHistorialProcesos(String estado) {
         return historialProcesos.getOrDefault(estado, List.of());
     }
 }

@@ -20,7 +20,7 @@ public class SimuladorPresenter implements IPresenter {
     private final List<Particion> particionesMemoria;
 
     private final List<Proceso> procesosCargados = new ArrayList<>();
-    private final Map<String, List<Proceso>> historialesPorEstado = new LinkedHashMap<>();
+    private final Map<String, List<RegistroSimulacion.SnapshotProceso>> historialesPorEstado = new LinkedHashMap<>();
     private int contadorId = 1;
     private RegistroSimulacion ultimoRegistro = new RegistroSimulacion();
 
@@ -96,7 +96,15 @@ public class SimuladorPresenter implements IPresenter {
 
         // Al cargar exitosamente, se registra inmediatamente en Listo.
         historialesPorEstado.computeIfAbsent(RegistroSimulacion.INICIO, key -> new ArrayList<>())
-            .add(nuevo.copiar());
+            .add(new RegistroSimulacion.SnapshotProceso(
+                nuevo.getId(),
+                nuevo.getNombre(),
+                nuevo.getTiempoRestante(),
+                nuevo.getTamanioMemoria(),
+                nuevo.isPasaPorBloqueado(),
+                RegistroSimulacion.INICIO,
+                nuevo.getParticion() != null ? nuevo.getParticion().getNombre() : null
+            ));
 
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
@@ -255,7 +263,7 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void onVerHistorial(String estado) {
         String estadoCanonico = normalizarEstado(estado);
-        List<Proceso> datos = historialesPorEstado.getOrDefault(estadoCanonico, List.of());
+        List<RegistroSimulacion.SnapshotProceso> datos = historialesPorEstado.getOrDefault(estadoCanonico, List.of());
         view.mostrarHistorial(estado, datos);
     }
 
@@ -285,12 +293,7 @@ public class SimuladorPresenter implements IPresenter {
     private void sincronizarHistorialesConRegistro(RegistroSimulacion registro) {
         historialesPorEstado.values().forEach(List::clear);
         for (String estado : ESTADOS) {
-            List<Proceso> origen = registro.getHistorialProcesos(estado);
-            List<Proceso> copias = new ArrayList<>(origen.size());
-            for (Proceso proceso : origen) {
-                copias.add(proceso.copiar());
-            }
-            historialesPorEstado.put(estado, copias);
+            historialesPorEstado.put(estado, registro.getHistorialProcesos(estado));
         }
     }
 

@@ -2,6 +2,7 @@ package co.edu.uptc.processes1.view;
 
 import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.model.Particion;
+import co.edu.uptc.processes1.presenter.RegistroSimulacion;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ public interface IView {
 
     // ── Historial por Estado ──────────────────────────────────────────────────
 
-    void mostrarHistorial(String estado, List<Proceso> datos);
+    void mostrarHistorial(String estado, List<RegistroSimulacion.SnapshotProceso> datos);
 
     // ── Datos del Formulario (delegados al modal FormProcces) ─────────────────
 

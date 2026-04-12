@@ -640,7 +640,7 @@ public class MainView implements IView {
     @Override public void actualizarEstadoSimulacion(String e) { lblEstadoSim.setText(e); }
 
     @Override
-    public void mostrarHistorial(String estado, List<Proceso> datos) {
+    public void mostrarHistorial(String estado, List<RegistroSimulacion.SnapshotProceso> datos) {
         ventanasHistorial.computeIfAbsent(estado, HistorialView::new).mostrarConDatos(datos);
     }
 
