@@ -19,72 +19,106 @@ public class MotorSimulacion {
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales, List<Particion> particiones) {
         int[] ultimaParticion = {0};
         RegistroSimulacion registro = new RegistroSimulacion();
-        List<ProcesoRuntime> colaListos = new ArrayList<>();
+
+        // Calcular tamaño de partición más grande
         long particionMasGrande = particiones == null || particiones.isEmpty()
             ? 0L
             : particiones.stream().mapToLong(Particion::getTamanoTotal).max().orElse(0L);
 
-        // CAMBIO: ya NO registramos "Listo" aquí, solo encolamos
-        for (Proceso proceso : procesosIniciales) {
-            colaListos.add(ProcesoRuntime.desde(proceso));
+        // === INICIALIZACIÓN ===
+        // 1. Ordenar procesos por tiempo de ejecución ascendente
+        List<ProcesoRuntime> procesosOrdenados = procesosIniciales.stream()
+            .map(ProcesoRuntime::desde)
+            .sorted((a, b) -> Long.compare(a.tiempoRestante, b.tiempoRestante))
+            .toList();
+
+        List<ProcesoRuntime> colaListos = new ArrayList<>();
+
+        // 2. Marcar como NO_EJECUTADO los que superan partición más grande
+        for (ProcesoRuntime runtime : procesosOrdenados) {
+            if (runtime.tamanioMemoria > particionMasGrande) {
+                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, runtime);
+            } else {
+                colaListos.add(runtime);
+            }
         }
 
+        // === CICLO PRINCIPAL ===
         while (!colaListos.isEmpty()) {
-            ProcesoRuntime actual = colaListos.remove(0);
+            List<ProcesoRuntime> pendientes = new ArrayList<>();
+            List<ProcesoRuntime> siguienteCiclo = new ArrayList<>();
 
-            if (actual.tamanioMemoria > particionMasGrande) {
-                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, actual);
-                continue;
-            }
+            // Procesar todos los procesos actualmente en colaListos en orden
+            for (ProcesoRuntime actual : colaListos) {
+                // Intentar asignar partición con Next Fit
+                Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria, ultimaParticion);
 
-            Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria, ultimaParticion);
-
-            if (particionAsignada == null) {
-                colaListos.add(actual);
-                continue;
-            }
-
-            particionAsignada.ocupar();
-            actual.particion = particionAsignada;
-
-            // NUEVO: registrar "Listo" aquí, con partición ya asignada
-            registrarEstado(registro, RegistroSimulacion.INICIO, actual);
-
-            try {
-                registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
-
-                long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
-                long tiempoTrasRafaga = Math.max(0L, actual.tiempoRestante - rafaga);
-                registro.registrarUsoParticion(
-                    actual.id,
-                    actual.nombre,
-                    particionAsignada.getNombre(),
-                    rafaga
-                );
-                registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoTrasRafaga);
-                actual.tiempoRestante = tiempoTrasRafaga;
-
-                if (actual.tiempoRestante <= 0L) {
-                    registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
+                if (particionAsignada == null) {
+                    // Si no se encuentra: reencolar en pendientes
+                    pendientes.add(actual);
                     continue;
                 }
 
-                if (actual.pasaPorBloqueado) {
-                    registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
-                    registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
-                    registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
-                } else {
-                    registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
+                // Si se encuentra partición:
+                particionAsignada.ocupar();
+                actual.particion = particionAsignada;
+
+                try {
+                    // a. Registrar snapshot INICIO (Listo) con partición asignada
+                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
+
+                    // b. Registrar snapshot DESPACHAR
+                    registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
+
+                    // c. Calcular ráfaga = min(QUANTUM, tiempoRestante)
+                    long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
+                    long tiempoTrasRafaga = Math.max(0L, actual.tiempoRestante - rafaga);
+
+                    // d. Registrar snapshot PROCESADOR con tiempoRestante - rafaga como tiempo snapshot
+                    registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoTrasRafaga);
+
+                    // e. Llamar registro.registrarUsoParticion(..., rafaga)
+                    registro.registrarUsoParticion(
+                        actual.id,
+                        actual.nombre,
+                        particionAsignada.getNombre(),
+                        rafaga
+                    );
+
+                    // f. Actualizar actual.tiempoRestante -= rafaga
+                    actual.tiempoRestante = tiempoTrasRafaga;
+
+                    // g. Si tiempoRestante <= 0: registrar FINALIZADO y no reencolar
+                    if (actual.tiempoRestante <= 0L) {
+                        registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
+                    } else if (actual.pasaPorBloqueado) {
+                        // h. Si tiempoRestante > 0 y pasaPorBloqueado: registrar BLOQUEAR, BLOQUEADO, DESPERTAR, reencolar
+                        registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
+                        registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
+                        registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
+                        siguienteCiclo.add(actual);
+                    } else {
+                        // i. Si tiempoRestante > 0 y no pasaPorBloqueado: registrar EXPIRACION_TIEMPO, reencolar
+                        registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
+                        siguienteCiclo.add(actual);
+                    }
+
+                } finally {
+                    // j. Liberar inmediatamente después de la ráfaga
+                    particionAsignada.liberar();
+                    actual.particion = null;
                 }
-
-                colaListos.add(actual);
-
-            } finally {
-                particionAsignada.liberar();
-                actual.particion = null;
             }
+
+            // Al terminar de procesar todos los procesos del ciclo actual:
+            // colaListos = pendientes + siguienteCiclo (primero no encontraron, luego ejecutaron)
+            colaListos.clear();
+            colaListos.addAll(pendientes);
+            colaListos.addAll(siguienteCiclo);
         }
 
+        // === FINALIZACIÓN ===
+        // Llamar registro.copiarEstado(FINALIZADO, FINALIZACION_PARTICIONES)
         registro.copiarEstado(
             RegistroSimulacion.FINALIZADO,
             RegistroSimulacion.FINALIZACION_PARTICIONES

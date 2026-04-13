@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -317,36 +318,23 @@ public class HistorialView {
         Label lblTotal = new Label("Tiempo total de ejecución: " + (tiempoTotal / 1000L) + " s");
         lblTotal.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #7B9EA6;");
 
-        TableView<RegistroSimulacion.UsoParticion> tabla = new TableView<>();
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tabla.setPlaceholder(new Label("No hay procesos registrados para esta partición."));
-
-        TableColumn<RegistroSimulacion.UsoParticion, String> colNombre = new TableColumn<>("Nombre del Proceso");
-        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().nombreProceso()));
-
-        TableColumn<RegistroSimulacion.UsoParticion, Long> colVeces = new TableColumn<>("Veces que ocupó la partición");
-        colVeces.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().veces()).asObject());
-
-        TableColumn<RegistroSimulacion.UsoParticion, Long> colCpu = new TableColumn<>("Tiempo de CPU consumido");
-        colCpu.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().tiempoCpu()).asObject());
-        colCpu.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(Long item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    return;
-                }
-                setText(String.valueOf(item / 1000L) + " s");
+        List<String> pasosExpandidos = new ArrayList<>();
+        for (RegistroSimulacion.UsoParticion uso : usos) {
+            if (uso == null || uso.nombreProceso() == null || uso.nombreProceso().isBlank()) {
+                continue;
             }
-        });
+            for (long i = 0; i < uso.veces(); i++) {
+                pasosExpandidos.add(uso.nombreProceso());
+            }
+        }
 
-        tabla.getColumns().addAll(colNombre, colVeces, colCpu);
-        tabla.setItems(FXCollections.observableArrayList(usos));
+        ListView<String> lista = new ListView<>();
+        lista.setPlaceholder(new Label("No hay procesos registrados para esta partición."));
+        lista.setItems(FXCollections.observableArrayList(pasosExpandidos));
 
-        VBox contenedor = new VBox(10, lblTituloParticion, lblTotal, tabla);
+        VBox contenedor = new VBox(10, lblTituloParticion, lblTotal, lista);
         contenedor.setPadding(new Insets(12, 0, 0, 0));
-        VBox.setVgrow(tabla, Priority.ALWAYS);
+        VBox.setVgrow(lista, Priority.ALWAYS);
         return contenedor;
     }
 
