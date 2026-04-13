@@ -26,11 +26,6 @@ public class MotorSimulacion {
             colaListos.add(ProcesoRuntime.desde(proceso));
         }
 
-        // Primer registro de "Listo" sin partición — registrado UNA sola vez al entrar
-        for (ProcesoRuntime rt : colaListos) {
-            registrarEstado(registro, RegistroSimulacion.INICIO, rt);
-        }
-
         while (!colaListos.isEmpty()) {
             ProcesoRuntime actual = colaListos.remove(0);
 
@@ -43,6 +38,9 @@ public class MotorSimulacion {
 
             particionAsignada.ocupar();
             actual.particion = particionAsignada;
+
+            // NUEVO: registrar "Listo" aquí, con partición ya asignada
+            registrarEstado(registro, RegistroSimulacion.INICIO, actual);
 
             try {
                 registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
@@ -65,8 +63,6 @@ public class MotorSimulacion {
                     registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
                 }
 
-                // CAMBIO: registrar "Listo" CON la partición actual antes de liberar
-                registrarEstado(registro, RegistroSimulacion.INICIO, actual);
                 colaListos.add(actual);
 
             } finally {
@@ -87,7 +83,7 @@ public class MotorSimulacion {
             int idx = (ultimaUsada[0] + i) % n;
             Particion p = particiones.get(idx);
             if (p.estaDisponible(tamanio)) {
-                ultimaUsada[0] = idx;
+                ultimaUsada[0] = (idx + 1) % n;
                 return p;
             }
         }
