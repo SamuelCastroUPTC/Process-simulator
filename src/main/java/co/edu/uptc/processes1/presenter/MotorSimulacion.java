@@ -47,6 +47,7 @@ public class MotorSimulacion {
         while (!colaListos.isEmpty()) {
             List<ProcesoRuntime> pendientes = new ArrayList<>();
             List<ProcesoRuntime> siguienteCiclo = new ArrayList<>();
+            List<Particion> particionesALiberar = new ArrayList<>();
 
             // Procesar todos los procesos actualmente en colaListos en orden
             for (ProcesoRuntime actual : colaListos) {
@@ -104,11 +105,22 @@ public class MotorSimulacion {
                     }
 
                 } finally {
-                    // j. Liberar inmediatamente después de la ráfaga
-                    particionAsignada.liberar();
+                    if (actual.tiempoRestante <= 0L) {
+                        // Terminó: liberar inmediatamente
+                        particionAsignada.liberar();
+                    } else {
+                        // Sigue vivo: liberar al final del ciclo
+                        particionesALiberar.add(particionAsignada);
+                    }
                     actual.particion = null;
                 }
             }
+
+            // Liberar todas las particiones al terminar el ciclo
+            for (Particion p : particionesALiberar) {
+                p.liberar();
+            }
+            particionesALiberar.clear();
 
             // Al terminar de procesar todos los procesos del ciclo actual:
             // colaListos = pendientes + siguienteCiclo (primero no encontraron, luego ejecutaron)

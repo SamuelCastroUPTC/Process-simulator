@@ -187,7 +187,20 @@ public class HistorialView {
         colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().nombre()));
         tv.getColumns().add(colNombre);
 
-        boolean esFinalizado = ESTADO_FINALIZADO.equalsIgnoreCase(estado);
+        // Agregar columna "Partición" si es FINALIZACION_PARTICIONES
+        if (RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado)) {
+            TableColumn<RegistroSimulacion.SnapshotProceso, String> colParticion = new TableColumn<>("Partición");
+            colParticion.setCellValueFactory(cell -> {
+                String nombreParticion = cell.getValue().nombreParticion();
+                String valor = (nombreParticion == null || nombreParticion.isBlank()) ? "Sin asignar" : nombreParticion;
+                return new SimpleStringProperty(valor);
+            });
+            colParticion.setPrefWidth(140);
+            tv.getColumns().add(colParticion);
+        }
+
+        boolean esFinalizado = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
+            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
         if (!esFinalizado) {
             TableColumn<RegistroSimulacion.SnapshotProceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
             colTiempo.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().tiempoRestante()).asObject());
@@ -259,14 +272,18 @@ public class HistorialView {
                     Collectors.toList()
                 ));
 
-            procesosPorParticion.forEach((nombreTab, procesosParticion) -> {
-                Tab tabParticion = new Tab(nombreTab);
-                TableView<RegistroSimulacion.SnapshotProceso> tablaParticion = crearTablaParaEstado();
-                tablaParticion.setItems(FXCollections.observableArrayList(procesosParticion));
-                tabParticion.setContent(envolverTabla(tablaParticion));
-                tabParticion.setClosable(false);
-                tabPane.getTabs().add(tabParticion);
-            });
+            procesosPorParticion.entrySet().stream()
+                .filter(entry -> !"Sin asignar".equals(entry.getKey()))
+                .forEach(entry -> {
+                    String nombreTab = entry.getKey();
+                    List<RegistroSimulacion.SnapshotProceso> procesosParticion = entry.getValue();
+                    Tab tabParticion = new Tab(nombreTab);
+                    TableView<RegistroSimulacion.SnapshotProceso> tablaParticion = crearTablaParaEstado();
+                    tablaParticion.setItems(FXCollections.observableArrayList(procesosParticion));
+                    tabParticion.setContent(envolverTabla(tablaParticion));
+                    tabParticion.setClosable(false);
+                    tabPane.getTabs().add(tabParticion);
+                });
         }
 
         int n = datos.size();
