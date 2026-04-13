@@ -243,22 +243,35 @@ public class MainView implements IView {
     // ══════════════════ SUP-DER: Tabla de procesos ═══════════════════════════
 
     private VBox construirCuadranteTabla() {
-        Label lblTitulo = new Label("Cola de Procesos y Particiones");
+        Label lblTitulo = new Label("Cola de Procesos");
         lblTitulo.getStyleClass().add("card-titulo");
 
-        Label lblSub = new Label("Consulte los procesos cargados y el estado actual de la memoria");
+        Label lblSub = new Label("Procesos cargados y estado actual de las particiones de memoria");
         lblSub.getStyleClass().add("card-subtitulo");
 
         tablaCargados = construirTablaProcesos();
         tablaCargados.setMaxHeight(Double.MAX_VALUE);
         VBox.setVgrow(tablaCargados, Priority.ALWAYS);
 
+        Label lblParticiones = new Label("Estado de Particiones");
+        lblParticiones.getStyleClass().add("card-titulo");
+
+        tablaParticiones = construirTablaParticiones();
+        tablaParticiones.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(tablaParticiones, Priority.ALWAYS);
+
         // ── Card contenedor ───────────────────────────────────────────────────
-        VBox card = new VBox(10, lblTitulo, lblSub, new Separator(), tablaCargados);
+        VBox card = new VBox(10,
+            lblTitulo, lblSub, new Separator(),
+            tablaCargados,
+            new Separator(), lblParticiones,
+            tablaParticiones
+        );
         card.getStyleClass().add("card");
         card.setMaxHeight(Double.MAX_VALUE);
         card.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(tablaCargados, Priority.ALWAYS);
+        VBox.setVgrow(tablaParticiones, Priority.ALWAYS);
 
         return card;
     }
