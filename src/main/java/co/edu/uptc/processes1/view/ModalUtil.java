@@ -85,6 +85,11 @@ public class ModalUtil {
 
         Scene scene = new Scene(overlay);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        scene.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                modal.close();
+            }
+        });
 
         // Cargar CSS
         var css = ModalUtil.class.getResource("/css/Simulador.css");

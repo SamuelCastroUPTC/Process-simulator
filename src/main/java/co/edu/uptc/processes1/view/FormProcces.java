@@ -1,5 +1,6 @@
 package co.edu.uptc.processes1.view;
 
+import co.edu.uptc.processes1.model.Proceso;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,6 +12,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FormProcces — Modal UNDECORATED para crear un proceso.
@@ -36,6 +40,7 @@ public class FormProcces {
     private TextField        txtTiempo;
     private TextField        txtTamanioMemoria;   // campo nuevo
     private ComboBox<String> cmbBloqueable;
+    private ListView<String> listaProcesosCargados;
 
     private Stage    modalStage;
     private Runnable onCargar;
@@ -121,12 +126,36 @@ public class FormProcces {
         colDer.setPadding(new Insets(0, 0, 0, 20));
         HBox.setHgrow(colDer, Priority.ALWAYS);
 
+        // ══════════════ PANEL DERECHO EXTRA — Procesos cargados ══════════════
+        listaProcesosCargados = new ListView<>();
+        listaProcesosCargados.setFocusTraversable(false);
+        listaProcesosCargados.setMouseTransparent(true);
+        listaProcesosCargados.setPlaceholder(new Label("No hay procesos cargados."));
+        listaProcesosCargados.setPrefHeight(220);
+        listaProcesosCargados.setMaxWidth(Double.MAX_VALUE);
+
+        VBox panelProcesos = new VBox(10,
+            seccion("PROCESOS CARGADOS"),
+            new Separator(),
+            listaProcesosCargados
+        );
+        panelProcesos.setAlignment(Pos.TOP_LEFT);
+        panelProcesos.setPadding(new Insets(0, 0, 0, 20));
+        panelProcesos.setPrefWidth(280);
+        panelProcesos.setMaxWidth(320);
+        VBox.setVgrow(listaProcesosCargados, Priority.ALWAYS);
+        HBox.setHgrow(panelProcesos, Priority.ALWAYS);
+
         // ══════════════ FILA DE DOS COLUMNAS ═════════════════════════════════
         Separator sepV = new Separator();
         sepV.setOrientation(javafx.geometry.Orientation.VERTICAL);
         sepV.setPrefHeight(50);
 
-        HBox dosColumnas = new HBox(colIzq, sepV, colDer);
+        Separator sepV2 = new Separator();
+        sepV2.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        sepV2.setPrefHeight(50);
+
+        HBox dosColumnas = new HBox(colIzq, sepV, colDer, sepV2, panelProcesos);
         dosColumnas.setAlignment(Pos.TOP_LEFT);
         dosColumnas.setPadding(new Insets(8, 0, 8, 0));
 
@@ -165,12 +194,17 @@ public class FormProcces {
             "-fx-background-color: #FFFFFF;" +
             "-fx-border-color: #DDD8D3; -fx-border-width: 1;"
         );
-        card.setPrefWidth(720);
+        card.setPrefWidth(900);
         card.setMinWidth(660);
-        card.setMaxWidth(780);
+        card.setMaxWidth(960);
 
         Scene scene = new Scene(card);
         scene.setFill(Color.WHITE);
+        scene.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                modalStage.close();
+            }
+        });
 
         var css = getClass().getResource("/css/Simulador.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());
@@ -244,6 +278,20 @@ public class FormProcces {
     public String  getTiempo()            { return txtTiempo.getText().trim(); }
     public String  getTamanioMemoria()    { return txtTamanioMemoria.getText().trim(); }
     public boolean isPasaPorBloqueado()   { return SI.equals(cmbBloqueable.getValue()); }
+
+    public void setProcesosCargados(List<Proceso> procesos) {
+        List<String> items = new ArrayList<>();
+        if (procesos != null) {
+            for (Proceso proceso : procesos) {
+                if (proceso == null) {
+                    continue;
+                }
+                long tiempoSegundos = proceso.getTiempoRestante() / 1000L;
+                items.add(proceso.getNombre() + " | " + tiempoSegundos + " s | " + proceso.getTamanioMemoria() + " u");
+            }
+        }
+        listaProcesosCargados.setItems(FXCollections.observableArrayList(items));
+    }
 
     public Stage getModalStage() { return modalStage; }
 

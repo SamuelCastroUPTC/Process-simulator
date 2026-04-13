@@ -337,17 +337,6 @@ public class MainView implements IView {
         colMemoria.setPrefWidth(110);
         colMemoria.setMinWidth(110);
 
-        TableColumn<Proceso, String> colParticion = new TableColumn<>("Particion");
-        colParticion.setCellValueFactory(cell -> {
-            Proceso p = cell.getValue();
-            Particion part = (p != null) ? p.getParticion() : null;
-            return new javafx.beans.property.SimpleStringProperty(
-                part != null ? part.toString() : "Sin asignar"
-            );
-        });
-        colParticion.setPrefWidth(160);
-        colParticion.setMinWidth(160);
-
         TableColumn<Proceso, Boolean> colBloq = boolCol("Bloqueable", "pasaPorBloqueado", 110);
 
         TableColumn<Proceso, Void> colEditar = accionCol("Editar", "#7B9EA6", proceso ->
@@ -360,7 +349,7 @@ public class MainView implements IView {
         colEliminar.setPrefWidth(95); colEliminar.setMinWidth(95); colEliminar.setMaxWidth(115);
 
         tv.getColumns().addAll(
-            colNombre, colTiempo, colMemoria, colParticion,
+            colNombre, colTiempo, colMemoria,
             colBloq, colEditar, colEliminar
         );
         return tv;
@@ -670,6 +659,9 @@ public class MainView implements IView {
     private void abrirFormularioSeguro() {
         try {
             asegurarFormularioModal();
+            if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
+                formularioModal.setProcesosCargados(p.getProcesosCargados());
+            }
             formularioModal.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de creacion.");
@@ -679,6 +671,9 @@ public class MainView implements IView {
     private void abrirFormularioParticionSeguro() {
         try {
             asegurarFormularioParticion();
+            if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
+                formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
+            }
             formularioParticion.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de particiones.");

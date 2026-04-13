@@ -1,10 +1,13 @@
 package co.edu.uptc.processes1.view;
 
+import co.edu.uptc.processes1.model.Particion;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -18,11 +21,15 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class FormParticion {
 
     private final Stage modalStage;
     private final TextField txtNombre;
     private final TextField txtTamano;
+    private final ListView<String> listaParticionesCreadas;
     private Runnable onGuardar;
 
     public FormParticion(Window owner) {
@@ -79,6 +86,36 @@ public class FormParticion {
         c1.setFillWidth(true);
         grid.getColumnConstraints().addAll(c0, c1);
 
+        // Panel de particiones creadas
+        listaParticionesCreadas = new ListView<>();
+        listaParticionesCreadas.setFocusTraversable(false);
+        listaParticionesCreadas.setMouseTransparent(true);
+        listaParticionesCreadas.setPlaceholder(new Label("No hay particiones creadas."));
+        listaParticionesCreadas.setPrefHeight(220);
+
+        Label lblSeccionParticiones = new Label("PARTICIONES CREADAS");
+        lblSeccionParticiones.setStyle("-fx-text-fill: #7B9EA6; -fx-font-size: 11px; -fx-font-weight: bold;");
+
+        VBox panelParticiones = new VBox(10,
+            lblSeccionParticiones,
+            new Separator(),
+            listaParticionesCreadas
+        );
+        panelParticiones.setAlignment(Pos.TOP_LEFT);
+        panelParticiones.setPadding(new Insets(0, 0, 0, 20));
+        panelParticiones.setPrefWidth(280);
+        panelParticiones.setMaxWidth(320);
+        VBox.setVgrow(listaParticionesCreadas, Priority.ALWAYS);
+
+        Separator sepV = new Separator();
+        sepV.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        sepV.setPrefHeight(80);
+
+        HBox centro = new HBox(grid, sepV, panelParticiones);
+        centro.setAlignment(Pos.TOP_LEFT);
+        HBox.setHgrow(grid, Priority.ALWAYS);
+        HBox.setHgrow(panelParticiones, Priority.ALWAYS);
+
         Button btnCancelar = new Button("Cancelar");
         btnCancelar.setStyle(
             "-fx-background-color: transparent;" +
@@ -109,7 +146,7 @@ public class FormParticion {
         filaBotones.setAlignment(Pos.CENTER);
 
         VBox topSection = new VBox(16, header, new Separator());
-        VBox centerSection = new VBox(14, grid);
+        VBox centerSection = new VBox(14, centro);
         VBox bottomSection = new VBox(14, new Separator(), filaBotones);
 
         BorderPane card = new BorderPane();
@@ -121,11 +158,16 @@ public class FormParticion {
             "-fx-background-color: #FFFFFF;" +
             "-fx-border-color: #DDD8D3; -fx-border-width: 1;"
         );
-        card.setPrefWidth(620);
+        card.setPrefWidth(800);
         card.setMinWidth(560);
-        card.setMaxWidth(720);
+        card.setMaxWidth(880);
 
         Scene scene = new Scene(card);
+        scene.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                modalStage.close();
+            }
+        });
         var css = getClass().getResource("/css/Simulador.css");
         if (css != null) {
             scene.getStylesheets().add(css.toExternalForm());
@@ -160,6 +202,19 @@ public class FormParticion {
 
     public String getTamano() {
         return txtTamano.getText().trim();
+    }
+
+    public void setParticionesCreadas(List<Particion> particiones) {
+        List<String> items = new ArrayList<>();
+        if (particiones != null) {
+            for (Particion particion : particiones) {
+                if (particion == null) {
+                    continue;
+                }
+                items.add(particion.getNombre() + " | " + particion.getTamanoTotal() + " u");
+            }
+        }
+        listaParticionesCreadas.setItems(FXCollections.observableArrayList(items));
     }
 
     private TextField campo(String prompt) {

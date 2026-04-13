@@ -339,6 +339,11 @@ public class ConfigMemoriaview {
 
         Scene s = new Scene(box);
         s.setFill(Color.WHITE);
+        s.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                err.close();
+            }
+        });
         err.setScene(s);
         err.showAndWait();
     }
