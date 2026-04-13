@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.math.BigInteger;
 import java.util.stream.Collectors;
 
 public class SimuladorPresenter implements IPresenter {
@@ -21,6 +22,7 @@ public class SimuladorPresenter implements IPresenter {
 
     private final List<Proceso> procesosCargados = new ArrayList<>();
     private final Map<String, List<RegistroSimulacion.SnapshotProceso>> historialesPorEstado = new LinkedHashMap<>();
+    private Particion particionEnEdicion;
     private int contadorId = 1;
     private RegistroSimulacion ultimoRegistro = new RegistroSimulacion();
 
@@ -33,7 +35,8 @@ public class SimuladorPresenter implements IPresenter {
         RegistroSimulacion.BLOQUEADO,
         RegistroSimulacion.DESPERTAR,
         RegistroSimulacion.NO_EJECUTADO,
-        RegistroSimulacion.FINALIZADO
+        RegistroSimulacion.FINALIZADO,
+        RegistroSimulacion.FINALIZACION_PARTICIONES
     );
 
     public SimuladorPresenter(IView view) {
@@ -66,7 +69,7 @@ public class SimuladorPresenter implements IPresenter {
     public void agregarProceso(
         String nombre,
         long tiempo,
-        int tamanioMemoria,
+        long tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         if (existeNombre(nombre)) {
@@ -100,17 +103,29 @@ public class SimuladorPresenter implements IPresenter {
             view.mostrarError("El tamaño de la partición debe ser mayor a 0.");
             return;
         }
+        String nombreNormalizado = nombre.trim();
+        int idParticionEditada = particionEnEdicion != null ? particionEnEdicion.getId() : -1;
         boolean nombreDuplicado = particionesMemoria.stream()
-            .anyMatch(p -> p.getNombre().equalsIgnoreCase(nombre.trim()));
+            .anyMatch(p -> p.getId() != idParticionEditada
+                && p.getNombre().equalsIgnoreCase(nombreNormalizado));
         if (nombreDuplicado) {
             view.mostrarError("Ya existe una partición con ese nombre.");
             return;
         }
 
+        if (particionEnEdicion != null) {
+            particionEnEdicion.setNombre(nombreNormalizado);
+            particionEnEdicion.setTamanoTotal(tamano);
+            particionEnEdicion = null;
+            view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
+            view.mostrarExito("Partición actualizada correctamente.");
+            return;
+        }
+
         int idSecuencial = particionesMemoria.size() + 1;
-        particionesMemoria.add(new Particion(idSecuencial, nombre.trim(), tamano));
+        particionesMemoria.add(new Particion(idSecuencial, nombreNormalizado, tamano));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
-        view.mostrarExito("Partición '" + nombre.trim() + "' creada correctamente.");
+        view.mostrarExito("Partición '" + nombreNormalizado + "' creada correctamente.");
     }
 
     @Override
@@ -161,48 +176,33 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        long tiempoSegundos;
-        try {
-            tiempoSegundos = Long.parseLong(tiempoStr);
-        } catch (NumberFormatException ex) {
-            view.mostrarError("El tiempo ingresado no es valido o es demasiado largo.");
-            return;
-        }
-
-        if (tiempoSegundos <= 0) {
+        BigInteger tiempoSegundos = new BigInteger(tiempoStr);
+        if (tiempoSegundos.signum() <= 0) {
             view.mostrarError("El tiempo de ejecucion debe ser mayor a 0");
             return;
         }
 
-        long tiempo;
-        try {
-            tiempo = Math.multiplyExact(tiempoSegundos, 1000L);
-        } catch (ArithmeticException ex) {
-            view.mostrarError("El tiempo ingresado no es valido o es demasiado largo.");
-            return;
-        }
+        // Si el tiempo en milisegundos desborda long, se satura en Long.MAX_VALUE.
+        BigInteger tiempoMs = tiempoSegundos.multiply(BigInteger.valueOf(1000L));
+        long tiempo = tiempoMs.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
+            ? Long.MAX_VALUE
+            : tiempoMs.longValue();
 
         if (!tamanioMemoriaStr.matches("\\d+")) {
             view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
             return;
         }
 
-        int tamanioMemoria;
-        try {
-            long tamanioMemoriaLong = Long.parseLong(tamanioMemoriaStr);
-            if (tamanioMemoriaLong <= 0 || tamanioMemoriaLong > Integer.MAX_VALUE) {
-                throw new NumberFormatException();
-            }
-            tamanioMemoria = (int) tamanioMemoriaLong;
-        } catch (NumberFormatException ex) {
+        BigInteger tamanioMemoriaBig = new BigInteger(tamanioMemoriaStr);
+        if (tamanioMemoriaBig.signum() <= 0) {
             view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
             return;
         }
 
-        if (tamanioMemoria <= 0) {
-            view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
-            return;
-        }
+        // Si el tamaño desborda long, se satura en Long.MAX_VALUE.
+        long tamanioMemoria = tamanioMemoriaBig.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
+            ? Long.MAX_VALUE
+            : tamanioMemoriaBig.longValue();
 
         agregarProceso(
             nombre,
@@ -234,8 +234,20 @@ public class SimuladorPresenter implements IPresenter {
         if (particion == null) {
             return;
         }
+        if (particionEnEdicion != null && particionEnEdicion.getId() == particion.getId()) {
+            particionEnEdicion = null;
+        }
         particionesMemoria.removeIf(p -> p.getId() == particion.getId());
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
+    }
+
+    @Override
+    public void onEditarParticion(Particion particion) {
+        this.particionEnEdicion = particion;
+    }
+
+    public Particion getParticionEnEdicion() {
+        return particionEnEdicion;
     }
 
     @Override
@@ -291,6 +303,7 @@ public class SimuladorPresenter implements IPresenter {
             case "despertar" -> RegistroSimulacion.DESPERTAR;
             case "no ejecutado" -> RegistroSimulacion.NO_EJECUTADO;
             case "salida", "finalizado" -> RegistroSimulacion.FINALIZADO;
+            case "finalizacion de particiones", "finalización de particiones" -> RegistroSimulacion.FINALIZACION_PARTICIONES;
             default -> estado;
         };
     }

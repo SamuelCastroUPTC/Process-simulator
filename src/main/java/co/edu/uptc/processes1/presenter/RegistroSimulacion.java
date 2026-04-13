@@ -20,7 +20,7 @@ public class RegistroSimulacion {
         int id,
         String nombre,
         long tiempoRestante,
-        int tamanioMemoria,
+        long tamanioMemoria,
         boolean pasaPorBloqueado,
         String estadoActual,
         String nombreParticion
@@ -35,6 +35,7 @@ public class RegistroSimulacion {
     public static final String DESPERTAR = "Despertar";
     public static final String NO_EJECUTADO = "No Ejecutado";
     public static final String FINALIZADO = "Salida";
+    public static final String FINALIZACION_PARTICIONES = "Finalizacion de particiones";
 
     private static final List<String> ESTADOS = List.of(
         INICIO,
@@ -45,7 +46,8 @@ public class RegistroSimulacion {
         BLOQUEADO,
         DESPERTAR,
         NO_EJECUTADO,
-        FINALIZADO
+        FINALIZADO,
+        FINALIZACION_PARTICIONES
     );
 
     private final Map<String, List<String>> historialTexto;
@@ -93,6 +95,14 @@ public class RegistroSimulacion {
 
     public List<SnapshotProceso> getHistorialProcesos(String estado) {
         return historialProcesos.getOrDefault(estado, List.of());
+    }
+
+    public void copiarEstado(String estadoOrigen, String estadoDestino) {
+        List<String> origenTexto = historialTexto.getOrDefault(estadoOrigen, List.of());
+        List<SnapshotProceso> origenProcesos = historialProcesos.getOrDefault(estadoOrigen, List.of());
+
+        historialTexto.put(estadoDestino, new ArrayList<>(origenTexto));
+        historialProcesos.put(estadoDestino, new ArrayList<>(origenProcesos));
     }
 }
 

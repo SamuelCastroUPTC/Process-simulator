@@ -47,7 +47,8 @@ public class MainView implements IView {
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO, "Despachar", "Procesador",
         "Expiracion de tiempo", "Bloquear", "Bloqueado",
-        "Despertar", RegistroSimulacion.NO_EJECUTADO, "Salida"
+        "Despertar", RegistroSimulacion.NO_EJECUTADO, "Salida",
+        RegistroSimulacion.FINALIZACION_PARTICIONES
     };
 
     // ── Constructor ───────────────────────────────────────────────────────────
@@ -302,7 +303,7 @@ public class MainView implements IView {
             }
         });
 
-        TableColumn<Proceso, Integer> colMemoria = new TableColumn<>("Memoria (u)");
+        TableColumn<Proceso, Long> colMemoria = new TableColumn<>("Memoria (u)");
         colMemoria.setCellValueFactory(new PropertyValueFactory<>("tamanioMemoria"));
         colMemoria.setPrefWidth(110);
         colMemoria.setMinWidth(110);
@@ -376,7 +377,7 @@ public class MainView implements IView {
                 btn.setOnAction(e -> {
                     if (!isEmpty()) {
                         Particion particion = getTableView().getItems().get(getIndex());
-                        mostrarAviso("Edicion disponible en la siguiente iteracion. Particion: " + particion.getNombre());
+                        notificarEditarParticion(particion);
                     }
                 });
             }
@@ -563,6 +564,24 @@ public class MainView implements IView {
             p.onEliminarParticion(particion);
     }
 
+    private void notificarEditarParticion(Particion particion) {
+        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || particion == null) {
+            return;
+        }
+        p.onEditarParticion(particion);
+        try {
+            asegurarFormularioParticion();
+            if (formularioParticion.estaMostrandose()) {
+                return;
+            }
+            formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
+            formularioParticion.precargarDatos(particion.getNombre(), particion.getTamanoTotal());
+            formularioParticion.mostrar();
+        } catch (Exception ex) {
+            mostrarError("No fue posible abrir el formulario de edicion de particiones.");
+        }
+    }
+
     private void notificarAgregarParticion() {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
                 && formularioParticion != null) {
@@ -663,6 +682,7 @@ public class MainView implements IView {
         try {
             asegurarFormularioParticion();
             if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
+                p.onEditarParticion(null);
                 formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
             }
             formularioParticion.mostrar();
@@ -735,7 +755,9 @@ public class MainView implements IView {
             cc.setHgrow(Priority.ALWAYS);
             gridH.getColumnConstraints().add(cc);
         }
-        for (int r = 0; r < 3; r++) {
+        int columnas = 3;
+        int filas = (int) Math.ceil(ESTADOS_HISTORIAL.length / (double) columnas);
+        for (int r = 0; r < filas; r++) {
             RowConstraints rc = new RowConstraints();
             rc.setMinHeight(80);
             rc.setVgrow(Priority.ALWAYS);
@@ -753,13 +775,13 @@ public class MainView implements IView {
             btn.setOnAction(e -> notificarVerHistorial(estadoFinal));
             GridPane.setFillWidth(btn, true);
             GridPane.setFillHeight(btn, true);
-            gridH.add(btn, i % 3, i / 3);
+            gridH.add(btn, i % columnas, i / columnas);
         }
 
         VBox rootH = new VBox(barraH, gridH);
         VBox.setVgrow(gridH, Priority.ALWAYS);
 
-        Scene sceneH = new Scene(rootH, 620, 420);
+        Scene sceneH = new Scene(rootH, 620, Math.max(420, 320 + filas * 90));
         sceneH.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
                 stageHistoriales.close();

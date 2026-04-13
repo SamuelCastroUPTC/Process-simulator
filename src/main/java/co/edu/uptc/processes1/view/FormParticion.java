@@ -31,6 +31,7 @@ public class FormParticion {
     private final TextField txtTamano;
     private final ListView<String> listaParticionesCreadas;
     private Runnable onGuardar;
+    private boolean mantenerDatosPrecargados;
 
     public FormParticion(Window owner) {
         modalStage = new Stage();
@@ -180,8 +181,15 @@ public class FormParticion {
     }
 
     public void mostrar() {
-        limpiar();
+        if (!mantenerDatosPrecargados) {
+            limpiar();
+        }
+        mantenerDatosPrecargados = false;
         modalStage.showAndWait();
+    }
+
+    public boolean estaMostrandose() {
+        return modalStage.isShowing();
     }
 
     public void cerrar() {
@@ -202,6 +210,13 @@ public class FormParticion {
 
     public String getTamano() {
         return txtTamano.getText().replaceAll("\\.", "").trim();
+    }
+
+    public void precargarDatos(String nombre, long tamano) {
+        mantenerDatosPrecargados = true;
+        txtNombre.setText(nombre == null ? "" : nombre);
+        txtTamano.setText(tamano > 0 ? String.valueOf(tamano) : "");
+        txtNombre.requestFocus();
     }
 
     public void setParticionesCreadas(List<Particion> particiones) {

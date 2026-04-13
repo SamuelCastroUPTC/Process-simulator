@@ -71,10 +71,15 @@ public class MotorSimulacion {
             }
         }
 
+        registro.copiarEstado(
+            RegistroSimulacion.FINALIZADO,
+            RegistroSimulacion.FINALIZACION_PARTICIONES
+        );
+
         return registro;
     }
 
-    private Particion buscarParticionNextFit(List<Particion> particiones, int tamanio, int[] ultimaUsada) {
+    private Particion buscarParticionNextFit(List<Particion> particiones, long tamanio, int[] ultimaUsada) {
         if (particiones == null || particiones.isEmpty()) {
             return null;
         }
@@ -118,7 +123,7 @@ public class MotorSimulacion {
     private static final class ProcesoRuntime {
         private final int id;
         private final String nombre;
-        private final int tamanioMemoria;
+        private final long tamanioMemoria;
         private final boolean pasaPorBloqueado;
         private Particion particion;
         private long tiempoRestante;
@@ -127,7 +132,7 @@ public class MotorSimulacion {
             int id,
             String nombre,
             long tiempoRestante,
-            int tamanioMemoria,
+            long tamanioMemoria,
             boolean pasaPorBloqueado,
             Particion particion
         ) {

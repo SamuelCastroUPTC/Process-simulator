@@ -20,7 +20,7 @@ public interface IPresenter {
     void agregarProceso(
         String nombre,
         long tiempo,
-        int tamanioMemoria,
+        long tamanioMemoria,
         boolean pasaPorBloqueado
     );
 
@@ -54,4 +54,7 @@ public interface IPresenter {
     
     /** El usuario presionó "Eliminar" en la tabla de particiones. */
     void onEliminarParticion(Particion particion);
+
+    /** El usuario seleccionó una partición para editar. */
+    void onEditarParticion(Particion particion);
 }

@@ -50,7 +50,8 @@ public class HistorialView {
         Map.entry("Bloqueado",            new MetaEstado("#B8A8C8", "Procesos en estado bloqueado")),
         Map.entry("Despertar",            new MetaEstado("#98C8D4", "Procesos despertados desde el bloqueo")),
         Map.entry(RegistroSimulacion.NO_EJECUTADO, new MetaEstado("#CCCCCC", "Procesos que superan el tamano de su particion o sin particion asignada")),
-        Map.entry(ESTADO_FINALIZADO,      new MetaEstado("#AAAAAA", "Procesos que finalizaron su ejecucion"))
+        Map.entry(ESTADO_FINALIZADO,      new MetaEstado("#AAAAAA", "Procesos que finalizaron su ejecucion")),
+        Map.entry(RegistroSimulacion.FINALIZACION_PARTICIONES, new MetaEstado("#AAAAAA", "Procesos finalizados agrupados por particion"))
     );
 
     // ── Controles principales ─────────────────────────────────────────────────

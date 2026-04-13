@@ -14,7 +14,7 @@ public class Proceso {
     private final IntegerProperty id;
     private final StringProperty nombre;
     private final LongProperty tiempoRestante;
-    private final IntegerProperty tamanioMemoria;
+    private final LongProperty tamanioMemoria;
     private final BooleanProperty pasaPorBloqueado;
     private final StringProperty estadoActual;
     private final BooleanProperty excedeTamanoParticion;
@@ -24,31 +24,31 @@ public class Proceso {
         int id,
         String nombre,
         long tiempoRestante,
-        int tamanioMemoria,
+        long tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         this.id = new SimpleIntegerProperty(id);
         this.nombre = new SimpleStringProperty(nombre);
         this.tiempoRestante = new SimpleLongProperty(tiempoRestante);
-        this.tamanioMemoria = new SimpleIntegerProperty(tamanioMemoria);
+        this.tamanioMemoria = new SimpleLongProperty(tamanioMemoria);
         this.pasaPorBloqueado = new SimpleBooleanProperty(pasaPorBloqueado);
         this.estadoActual = new SimpleStringProperty("Listo");
         this.excedeTamanoParticion = new SimpleBooleanProperty(false);
         this.particion = null;
     }
 
-    public Proceso(int id, String nombre, long tiempoRestante, int tamanioMemoria) {
+    public Proceso(int id, String nombre, long tiempoRestante, long tamanioMemoria) {
         this(id, nombre, tiempoRestante, tamanioMemoria, false);
     }
 
-    public Proceso(String nombre, long tiempoRestante, int tamanioMemoria) {
+    public Proceso(String nombre, long tiempoRestante, long tamanioMemoria) {
         this(0, nombre, tiempoRestante, tamanioMemoria);
     }
 
     public Proceso(
         String nombre,
         long tiempoRestante,
-        int tamanioMemoria,
+        long tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         this(0, nombre, tiempoRestante, tamanioMemoria, pasaPorBloqueado);
@@ -70,7 +70,7 @@ public class Proceso {
         return getTiempoRestante();
     }
 
-    public int getTamanioMemoria() {
+    public long getTamanioMemoria() {
         return tamanioMemoria.get();
     }
 
@@ -98,7 +98,7 @@ public class Proceso {
         this.estadoActual.set(estadoActual);
     }
 
-    public void setTamanioMemoria(int tamanioMemoria) {
+    public void setTamanioMemoria(long tamanioMemoria) {
         this.tamanioMemoria.set(tamanioMemoria);
     }
 
@@ -134,7 +134,7 @@ public class Proceso {
         return tiempoRestante;
     }
 
-    public IntegerProperty tamanioMemoriaProperty() {
+    public LongProperty tamanioMemoriaProperty() {
         return tamanioMemoria;
     }
 
