@@ -15,25 +15,27 @@ import java.util.List;
 public class MotorSimulacion {
 
     private static final long QUANTUM = 5000L;
-    private int ultimaParticionUsada = 0;
 
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales, List<Particion> particiones) {
+        int[] ultimaParticion = {0};
         RegistroSimulacion registro = new RegistroSimulacion();
         List<ProcesoRuntime> colaListos = new ArrayList<>();
 
+        // CAMBIO: ya NO registramos "Listo" aquí, solo encolamos
         for (Proceso proceso : procesosIniciales) {
-            ProcesoRuntime runtime = ProcesoRuntime.desde(proceso);
-            colaListos.add(runtime);
-            registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
+            colaListos.add(ProcesoRuntime.desde(proceso));
+        }
+
+        // Primer registro de "Listo" sin partición — registrado UNA sola vez al entrar
+        for (ProcesoRuntime rt : colaListos) {
+            registrarEstado(registro, RegistroSimulacion.INICIO, rt);
         }
 
         while (!colaListos.isEmpty()) {
-            ProcesoRuntime actual = extraerSiguiente(colaListos);
-            if (actual == null) {
-                continue;
-            }
+            ProcesoRuntime actual = colaListos.remove(0);
 
-            Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria);
+            Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria, ultimaParticion);
+
             if (particionAsignada == null) {
                 registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, actual);
                 continue;
@@ -46,9 +48,9 @@ public class MotorSimulacion {
                 registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
 
                 long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
-                long tiempoRestante = Math.max(0L, actual.tiempoRestante - rafaga);
-                registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoRestante);
-                actual.tiempoRestante = tiempoRestante;
+                long tiempoTrasRafaga = Math.max(0L, actual.tiempoRestante - rafaga);
+                registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoTrasRafaga);
+                actual.tiempoRestante = tiempoTrasRafaga;
 
                 if (actual.tiempoRestante <= 0L) {
                     registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
@@ -59,14 +61,14 @@ public class MotorSimulacion {
                     registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
                     registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
                     registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
-                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
-                    colaListos.add(actual);
-                    continue;
+                } else {
+                    registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
                 }
 
-                registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
+                // CAMBIO: registrar "Listo" CON la partición actual antes de liberar
                 registrarEstado(registro, RegistroSimulacion.INICIO, actual);
                 colaListos.add(actual);
+
             } finally {
                 particionAsignada.liberar();
                 actual.particion = null;
@@ -76,16 +78,16 @@ public class MotorSimulacion {
         return registro;
     }
 
-    private Particion buscarParticionNextFit(List<Particion> particiones, int tamanio) {
+    private Particion buscarParticionNextFit(List<Particion> particiones, int tamanio, int[] ultimaUsada) {
         if (particiones == null || particiones.isEmpty()) {
             return null;
         }
         int n = particiones.size();
         for (int i = 0; i < n; i++) {
-            int idx = (ultimaParticionUsada + i) % n;
+            int idx = (ultimaUsada[0] + i) % n;
             Particion p = particiones.get(idx);
             if (p.estaDisponible(tamanio)) {
-                ultimaParticionUsada = idx;
+                ultimaUsada[0] = idx;
                 return p;
             }
         }

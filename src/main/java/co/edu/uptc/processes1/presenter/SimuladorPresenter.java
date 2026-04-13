@@ -84,18 +84,6 @@ public class SimuladorPresenter implements IPresenter {
 
         procesosCargados.add(nuevo);
 
-        // Al cargar exitosamente, se registra inmediatamente en Listo.
-        historialesPorEstado.computeIfAbsent(RegistroSimulacion.INICIO, key -> new ArrayList<>())
-            .add(new RegistroSimulacion.SnapshotProceso(
-                nuevo.getId(),
-                nuevo.getNombre(),
-                nuevo.getTiempoRestante(),
-                nuevo.getTamanioMemoria(),
-                nuevo.isPasaPorBloqueado(),
-                RegistroSimulacion.INICIO,
-                null
-            ));
-
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
         view.limpiarFormularioCarga();
