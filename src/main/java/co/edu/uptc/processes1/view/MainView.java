@@ -37,6 +37,7 @@ public class MainView implements IView {
 
     private Button btnIniciar;
     private Label  lblEstadoSim;
+    private Stage stageHistoriales;
 
     private final Map<String, HistorialView> ventanasHistorial = new HashMap<>();
     private Object presenter;
@@ -134,7 +135,7 @@ public class MainView implements IView {
         return barra;
     }
 
-    // ══════════════════ CUERPO — 4 CUADRANTES ════════════════════════════════
+    // ══════════════════ CUERPO — LAYOUT PRINCIPAL ════════════════════════════
 
     private GridPane construirCuerpo() {
         GridPane grid = new GridPane();
@@ -154,35 +155,24 @@ public class MainView implements IView {
         grid.getColumnConstraints().addAll(cc0, cc1);
 
         RowConstraints rc0 = new RowConstraints();
-        rc0.setPercentHeight(50);
-        rc0.setVgrow(Priority.ALWAYS);
+        rc0.setPercentHeight(100);
+        grid.getRowConstraints().add(rc0);
 
-        RowConstraints rc1 = new RowConstraints();
-        rc1.setPercentHeight(50);
-        rc1.setVgrow(Priority.ALWAYS);
-
-        grid.getRowConstraints().addAll(rc0, rc1);
-
-        VBox supIzq = construirCuadranteCrear();
-        grid.add(supIzq, 0, 0);
-        GridPane.setFillWidth(supIzq,  true);
-        GridPane.setFillHeight(supIzq, true);
+        VBox cardCrear = construirCuadranteCrear();
+        VBox cardIniciar = construirCuadranteIniciar();
+        VBox columnaIzq = new VBox(20, cardCrear, cardIniciar);
+        VBox.setVgrow(cardCrear, Priority.ALWAYS);
+        VBox.setVgrow(cardIniciar, Priority.ALWAYS);
+        columnaIzq.setMaxHeight(Double.MAX_VALUE);
+        grid.add(columnaIzq, 0, 0);
+        GridPane.setFillWidth(columnaIzq, true);
+        GridPane.setFillHeight(columnaIzq, true);
 
         // CAMBIO 2: ahora devuelve el card con TabPane dentro
         VBox supDer = construirCuadranteTabla();
         grid.add(supDer, 1, 0);
         GridPane.setFillWidth(supDer,  true);
         GridPane.setFillHeight(supDer, true);
-
-        VBox infIzq = construirCuadranteIniciar();
-        grid.add(infIzq, 0, 1);
-        GridPane.setFillWidth(infIzq,  true);
-        GridPane.setFillHeight(infIzq, true);
-
-        VBox infDer = construirCuadranteHistoriales();
-        grid.add(infDer, 1, 1);
-        GridPane.setFillWidth(infDer,  true);
-        GridPane.setFillHeight(infDer, true);
 
         return grid;
     }
@@ -250,8 +240,7 @@ public class MainView implements IView {
         );
     }
 
-    // ══════════════════ SUP-DER: TabPane con dos pestañas ════════════════════
-    // CAMBIO PRINCIPAL: reemplaza la tabla directa por un TabPane
+    // ══════════════════ SUP-DER: Tabla de procesos ═══════════════════════════
 
     private VBox construirCuadranteTabla() {
         Label lblTitulo = new Label("Cola de Procesos y Particiones");
@@ -260,48 +249,16 @@ public class MainView implements IView {
         Label lblSub = new Label("Consulte los procesos cargados y el estado actual de la memoria");
         lblSub.getStyleClass().add("card-subtitulo");
 
-        // ── Pestaña 1: Procesos Cargados ──────────────────────────────────────
         tablaCargados = construirTablaProcesos();
         tablaCargados.setMaxHeight(Double.MAX_VALUE);
-
-        // Envuelve la tabla en un VBox para que el padding interno quede limpio
-        VBox contenedorProcesos = new VBox(tablaCargados);
         VBox.setVgrow(tablaCargados, Priority.ALWAYS);
-        contenedorProcesos.setPadding(new Insets(10, 0, 0, 0));
-
-        Tab tabProcesos = new Tab("Procesos Cargados", contenedorProcesos);
-        tabProcesos.setClosable(false);
-
-        // ── Pestaña 2: Estado de Particiones ──────────────────────────────────
-        tablaParticiones = construirTablaParticiones();
-        tablaParticiones.setMaxHeight(Double.MAX_VALUE);
-
-        VBox contenedorParticiones = new VBox(tablaParticiones);
-        VBox.setVgrow(tablaParticiones, Priority.ALWAYS);
-        contenedorParticiones.setPadding(new Insets(10, 0, 0, 0));
-
-        Tab tabParticiones = new Tab("Estado de Particiones", contenedorParticiones);
-        tabParticiones.setClosable(false);
-
-        // ── TabPane ───────────────────────────────────────────────────────────
-        TabPane tabPane = new TabPane(tabProcesos, tabParticiones);
-        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        tabPane.setMaxHeight(Double.MAX_VALUE);
-        tabPane.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(tabPane, Priority.ALWAYS);
-
-        // Ocultar el fondo del TabPane para respetar el color de la tarjeta (#F7F3EF)
-        tabPane.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-tab-min-height: 32px;"
-        );
 
         // ── Card contenedor ───────────────────────────────────────────────────
-        VBox card = new VBox(10, lblTitulo, lblSub, new Separator(), tabPane);
+        VBox card = new VBox(10, lblTitulo, lblSub, new Separator(), tablaCargados);
         card.getStyleClass().add("card");
         card.setMaxHeight(Double.MAX_VALUE);
         card.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(tabPane, Priority.ALWAYS);
+        VBox.setVgrow(tablaCargados, Priority.ALWAYS);
 
         return card;
     }
@@ -428,77 +385,31 @@ public class MainView implements IView {
         btnIniciar.setDisable(true);
         btnIniciar.setOnAction(e -> notificarIniciarSimulacion());
 
+        Button btnHistoriales = new Button("Ver Historiales");
+        btnHistoriales.setMaxWidth(Double.MAX_VALUE);
+        btnHistoriales.setStyle(
+            "-fx-background-color: #7B9EA6;" +
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 16px; -fx-font-weight: bold;" +
+            "-fx-background-radius: 14;" +
+            "-fx-padding: 14 40 14 40;" +
+            "-fx-cursor: hand;"
+        );
+        btnHistoriales.setOnAction(e -> abrirVentanaHistoriales());
+
+        Region separadorBotones = new Region();
+        separadorBotones.setMinHeight(10);
+
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        VBox card = new VBox(14, lblTitulo, new Separator(), panelEstado, lblDesc, spacer, btnIniciar);
+        VBox card = new VBox(14, lblTitulo, new Separator(), panelEstado, lblDesc, spacer,
+            btnIniciar, separadorBotones, btnHistoriales);
         card.getStyleClass().add("card");
         card.setMaxHeight(Double.MAX_VALUE);
         card.setMaxWidth(Double.MAX_VALUE);
 
         return card;
-    }
-
-    // ══════════════════ INF-DER: 9 botones de historial ══════════════════════
-
-    private VBox construirCuadranteHistoriales() {
-        Label lblTitulo = new Label("Historial de Estados");
-        lblTitulo.getStyleClass().add("card-titulo");
-
-        Label lblSub = new Label("Consulte el historial de cada estado de la simulacion");
-        lblSub.getStyleClass().add("card-subtitulo");
-
-        GridPane grid = construirGridHistoriales();
-        VBox.setVgrow(grid, Priority.ALWAYS);
-
-        VBox card = new VBox(12, lblTitulo, lblSub, new Separator(), grid);
-        card.getStyleClass().add("card");
-        card.setMaxHeight(Double.MAX_VALUE);
-        card.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(grid, Priority.ALWAYS);
-
-        return card;
-    }
-
-    private GridPane construirGridHistoriales() {
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(12);
-        grid.setMaxWidth(Double.MAX_VALUE);
-        grid.setMaxHeight(Double.MAX_VALUE);
-
-        final int COLS = 3;
-        for (int c = 0; c < COLS; c++) {
-            ColumnConstraints cc = new ColumnConstraints();
-            cc.setPercentWidth(100.0 / COLS);
-            cc.setHgrow(Priority.ALWAYS);
-            grid.getColumnConstraints().add(cc);
-        }
-        for (int r = 0; r < 3; r++) {
-            RowConstraints rc = new RowConstraints();
-            rc.setPercentHeight(100.0 / 3.0);
-            rc.setVgrow(Priority.ALWAYS);
-            grid.getRowConstraints().add(rc);
-        }
-
-        for (int i = 0; i < ESTADOS_HISTORIAL.length; i++) {
-            grid.add(crearBtnHistorial(ESTADOS_HISTORIAL[i]), i % COLS, i / COLS);
-        }
-        return grid;
-    }
-
-    private Button crearBtnHistorial(String nombre) {
-        Button btn = new Button(nombre);
-        btn.getStyleClass().add("btn-historial");
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setMaxHeight(Double.MAX_VALUE);
-        btn.setWrapText(true);
-        btn.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        btn.setOnAction(e -> notificarVerHistorial(nombre));
-        GridPane.setHgrow(btn, Priority.ALWAYS);
-        GridPane.setFillWidth(btn,  true);
-        GridPane.setFillHeight(btn, true);
-        return btn;
     }
 
     // ══════════════════ HELPERS DE COLUMNAS ══════════════════════════════════
@@ -699,6 +610,91 @@ public class MainView implements IView {
         } catch (Exception ex) {
             ModalUtil.error(stage, "Ocurrio un error inesperado al abrir el manual.");
         }
+    }
+
+    private void abrirVentanaHistoriales() {
+        if (stageHistoriales != null && stageHistoriales.isShowing()) {
+            stageHistoriales.toFront();
+            return;
+        }
+        stageHistoriales = new Stage();
+        stageHistoriales.initOwner(stage);
+        stageHistoriales.initStyle(StageStyle.UNDECORATED);
+
+        Label lblTitulo = new Label("Historial de Estados");
+        lblTitulo.setStyle(
+            "-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #FFFFFF;"
+        );
+        Label lblSub = new Label("Seleccione un estado para consultar su historial");
+        lblSub.setStyle("-fx-font-size: 13px; -fx-text-fill: rgba(255,255,255,0.75);");
+        VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
+        infoTitulo.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(infoTitulo, Priority.ALWAYS);
+
+        Button btnCerrarH = new Button("Cerrar");
+        btnCerrarH.setStyle(
+            "-fx-background-color: transparent; -fx-text-fill: #FFFFFF;" +
+            "-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8 4 8;" +
+            "-fx-border-color: rgba(255,255,255,0.5); -fx-border-radius: 6;" +
+            "-fx-background-radius: 6;"
+        );
+        btnCerrarH.setOnAction(e -> stageHistoriales.close());
+
+        HBox barraH = new HBox(infoTitulo, btnCerrarH);
+        barraH.setStyle("-fx-background-color: #7B9EA6; -fx-padding: 20 28 20 28;");
+        barraH.setAlignment(Pos.CENTER_LEFT);
+
+        GridPane gridH = new GridPane();
+        gridH.setHgap(12);
+        gridH.setVgap(12);
+        gridH.setPadding(new Insets(24, 28, 28, 28));
+        gridH.setStyle("-fx-background-color: #F7F3EF;");
+        for (int c = 0; c < 3; c++) {
+            ColumnConstraints cc = new ColumnConstraints();
+            cc.setPercentWidth(100.0 / 3);
+            cc.setHgrow(Priority.ALWAYS);
+            gridH.getColumnConstraints().add(cc);
+        }
+        for (int r = 0; r < 3; r++) {
+            RowConstraints rc = new RowConstraints();
+            rc.setMinHeight(80);
+            rc.setVgrow(Priority.ALWAYS);
+            gridH.getRowConstraints().add(rc);
+        }
+
+        for (int i = 0; i < ESTADOS_HISTORIAL.length; i++) {
+            final String estadoFinal = ESTADOS_HISTORIAL[i];
+            Button btn = new Button(estadoFinal);
+            btn.getStyleClass().add("btn-historial");
+            btn.setMaxWidth(Double.MAX_VALUE);
+            btn.setMaxHeight(Double.MAX_VALUE);
+            btn.setWrapText(true);
+            btn.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+            btn.setOnAction(e -> notificarVerHistorial(estadoFinal));
+            GridPane.setFillWidth(btn, true);
+            GridPane.setFillHeight(btn, true);
+            gridH.add(btn, i % 3, i / 3);
+        }
+
+        VBox rootH = new VBox(barraH, gridH);
+        VBox.setVgrow(gridH, Priority.ALWAYS);
+
+        Scene sceneH = new Scene(rootH, 620, 420);
+        sceneH.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                stageHistoriales.close();
+            }
+        });
+        var css = getClass().getResource("/css/Simulador.css");
+        if (css != null) sceneH.getStylesheets().add(css.toExternalForm());
+
+        stageHistoriales.setScene(sceneH);
+
+        stageHistoriales.setOnShown(e -> {
+            stageHistoriales.setX(stage.getX() + (stage.getWidth()  - sceneH.getWidth())  / 2);
+            stageHistoriales.setY(stage.getY() + (stage.getHeight() - sceneH.getHeight()) / 2);
+        });
+        stageHistoriales.show();
     }
 
     public Stage getStage() { return stage; }
