@@ -162,6 +162,6 @@ public class Proceso {
 
     @Override
     public String toString() {
-        return String.format("%s (%d)", getNombre(), getTiempoRestante() / 1000L);
+        return getNombre() + " (" + (getTiempoRestante() / 1000L) + ")";
     }
 }

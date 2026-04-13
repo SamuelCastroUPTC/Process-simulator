@@ -20,6 +20,9 @@ public class MotorSimulacion {
         int[] ultimaParticion = {0};
         RegistroSimulacion registro = new RegistroSimulacion();
         List<ProcesoRuntime> colaListos = new ArrayList<>();
+        long particionMasGrande = particiones == null || particiones.isEmpty()
+            ? 0L
+            : particiones.stream().mapToLong(Particion::getTamanoTotal).max().orElse(0L);
 
         // CAMBIO: ya NO registramos "Listo" aquí, solo encolamos
         for (Proceso proceso : procesosIniciales) {
@@ -29,10 +32,15 @@ public class MotorSimulacion {
         while (!colaListos.isEmpty()) {
             ProcesoRuntime actual = colaListos.remove(0);
 
+            if (actual.tamanioMemoria > particionMasGrande) {
+                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, actual);
+                continue;
+            }
+
             Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria, ultimaParticion);
 
             if (particionAsignada == null) {
-                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, actual);
+                colaListos.add(actual);
                 continue;
             }
 
@@ -47,6 +55,12 @@ public class MotorSimulacion {
 
                 long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
                 long tiempoTrasRafaga = Math.max(0L, actual.tiempoRestante - rafaga);
+                registro.registrarUsoParticion(
+                    actual.id,
+                    actual.nombre,
+                    particionAsignada.getNombre(),
+                    rafaga
+                );
                 registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoTrasRafaga);
                 actual.tiempoRestante = tiempoTrasRafaga;
 

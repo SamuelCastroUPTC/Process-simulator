@@ -639,7 +639,18 @@ public class MainView implements IView {
 
     @Override
     public void mostrarHistorial(String estado, List<RegistroSimulacion.SnapshotProceso> datos) {
-        ventanasHistorial.computeIfAbsent(estado, HistorialView::new).mostrarConDatos(datos);
+        HistorialView historialView = ventanasHistorial.computeIfAbsent(estado, HistorialView::new);
+        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
+                && esEstadoFinalizacion(estado)) {
+            historialView.mostrarConDatos(datos, p.getUsoParticiones());
+            return;
+        }
+        historialView.mostrarConDatos(datos);
+    }
+
+    private boolean esEstadoFinalizacion(String estado) {
+        return RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)
+            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
     }
 
     @Override public String   getNombreProceso()           { return formularioModal != null ? formularioModal.getNombre()         : ""; }

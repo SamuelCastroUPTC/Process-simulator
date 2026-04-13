@@ -16,6 +16,14 @@ import java.util.Map;
  */
 public class RegistroSimulacion {
 
+    public record UsoParticion(
+        int idProceso,
+        String nombreProceso,
+        String nombreParticion,
+        long veces,
+        long tiempoCpu
+    ) {}
+
     public record SnapshotProceso(
         int id,
         String nombre,
@@ -52,10 +60,12 @@ public class RegistroSimulacion {
 
     private final Map<String, List<String>> historialTexto;
     private final Map<String, List<SnapshotProceso>> historialProcesos;
+    private final Map<String, Map<Integer, UsoParticionAcumulado>> usoParticiones;
 
     public RegistroSimulacion() {
         this.historialTexto = new LinkedHashMap<>();
         this.historialProcesos = new LinkedHashMap<>();
+        this.usoParticiones = new LinkedHashMap<>();
         for (String estado : ESTADOS) {
             historialTexto.put(estado, new ArrayList<>());
             historialProcesos.put(estado, new ArrayList<>());
@@ -81,6 +91,18 @@ public class RegistroSimulacion {
         historialTexto.computeIfAbsent(estado, key -> new ArrayList<>()).add(mensaje);
     }
 
+    public void registrarUsoParticion(int idProceso, String nombreProceso, String nombreParticion, long tiempoCpu) {
+        if (nombreParticion == null || nombreParticion.isBlank()) {
+            return;
+        }
+        Map<Integer, UsoParticionAcumulado> porProceso = usoParticiones.computeIfAbsent(nombreParticion, key -> new LinkedHashMap<>());
+        UsoParticionAcumulado acumulado = porProceso.computeIfAbsent(
+            idProceso,
+            key -> new UsoParticionAcumulado(idProceso, nombreProceso, nombreParticion)
+        );
+        acumulado.incrementar(tiempoCpu);
+    }
+
     public Map<String, List<String>> getHistorialTexto() {
         return Collections.unmodifiableMap(historialTexto);
     }
@@ -103,6 +125,39 @@ public class RegistroSimulacion {
 
         historialTexto.put(estadoDestino, new ArrayList<>(origenTexto));
         historialProcesos.put(estadoDestino, new ArrayList<>(origenProcesos));
+    }
+
+    public List<UsoParticion> getUsoParticiones() {
+        List<UsoParticion> resultado = new ArrayList<>();
+        for (Map<Integer, UsoParticionAcumulado> porProceso : usoParticiones.values()) {
+            for (UsoParticionAcumulado acumulado : porProceso.values()) {
+                resultado.add(acumulado.aUsoParticion());
+            }
+        }
+        return Collections.unmodifiableList(resultado);
+    }
+
+    private static final class UsoParticionAcumulado {
+        private final int idProceso;
+        private final String nombreProceso;
+        private final String nombreParticion;
+        private long veces;
+        private long tiempoCpu;
+
+        private UsoParticionAcumulado(int idProceso, String nombreProceso, String nombreParticion) {
+            this.idProceso = idProceso;
+            this.nombreProceso = nombreProceso;
+            this.nombreParticion = nombreParticion;
+        }
+
+        private void incrementar(long tiempoCpu) {
+            this.veces++;
+            this.tiempoCpu += tiempoCpu;
+        }
+
+        private UsoParticion aUsoParticion() {
+            return new UsoParticion(idProceso, nombreProceso, nombreParticion, veces, tiempoCpu);
+        }
     }
 }
 

@@ -35,6 +35,9 @@ public interface IPresenter {
     /** Devuelve las particiones de memoria disponibles. */
     List<Particion> getParticionesMemoria();
 
+    /** Devuelve el uso acumulado de particiones de la ultima simulacion. */
+    List<RegistroSimulacion.UsoParticion> getUsoParticiones();
+
     /** El usuario presionÃ³ "Cargar Proceso". El Presentador leerÃ¡ los datos de la Vista. */
     void onCargarProceso();
 

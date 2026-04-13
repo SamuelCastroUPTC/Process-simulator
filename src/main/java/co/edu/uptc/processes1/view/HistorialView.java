@@ -216,6 +216,10 @@ public class HistorialView {
      * @param datos Lista completa de procesos que pasaron por este estado.
      */
     public void mostrarConDatos(List<RegistroSimulacion.SnapshotProceso> datos) {
+        mostrarConDatos(datos, List.of());
+    }
+
+    public void mostrarConDatos(List<RegistroSimulacion.SnapshotProceso> datos, List<RegistroSimulacion.UsoParticion> usosParticion) {
         tabPane.getTabs().clear();
 
         Tab tabTodos = new Tab("Todos");
@@ -226,23 +230,43 @@ public class HistorialView {
         tabPane.getTabs().add(tabTodos);
         this.tablaTodos = tablaTodosNueva;
 
-        Map<String, List<RegistroSimulacion.SnapshotProceso>> procesosPorParticion = datos.stream()
-            .collect(Collectors.groupingBy(
-                proceso -> (proceso == null || proceso.nombreParticion() == null || proceso.nombreParticion().isBlank())
-                    ? "Sin asignar"
-                    : proceso.nombreParticion(),
-                LinkedHashMap::new,
-                Collectors.toList()
-            ));
+        boolean esFinalizacion = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
+            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
 
-        procesosPorParticion.forEach((nombreTab, procesosParticion) -> {
-            Tab tabParticion = new Tab(nombreTab);
-            TableView<RegistroSimulacion.SnapshotProceso> tablaParticion = crearTablaParaEstado();
-            tablaParticion.setItems(FXCollections.observableArrayList(procesosParticion));
-            tabParticion.setContent(envolverTabla(tablaParticion));
-            tabParticion.setClosable(false);
-            tabPane.getTabs().add(tabParticion);
-        });
+        if (esFinalizacion && usosParticion != null && !usosParticion.isEmpty()) {
+            Map<String, List<RegistroSimulacion.UsoParticion>> porParticion = usosParticion.stream()
+                .collect(Collectors.groupingBy(
+                    RegistroSimulacion.UsoParticion::nombreParticion,
+                    LinkedHashMap::new,
+                    Collectors.toList()
+                ));
+
+            porParticion.forEach((nombreParticion, usos) -> {
+                Tab tabParticion = new Tab(nombreParticion);
+                VBox contenidoParticion = construirContenidoParticionFinal(nombreParticion, usos);
+                tabParticion.setContent(contenidoParticion);
+                tabParticion.setClosable(false);
+                tabPane.getTabs().add(tabParticion);
+            });
+        } else {
+            Map<String, List<RegistroSimulacion.SnapshotProceso>> procesosPorParticion = datos.stream()
+                .collect(Collectors.groupingBy(
+                    proceso -> (proceso == null || proceso.nombreParticion() == null || proceso.nombreParticion().isBlank())
+                        ? "Sin asignar"
+                        : proceso.nombreParticion(),
+                    LinkedHashMap::new,
+                    Collectors.toList()
+                ));
+
+            procesosPorParticion.forEach((nombreTab, procesosParticion) -> {
+                Tab tabParticion = new Tab(nombreTab);
+                TableView<RegistroSimulacion.SnapshotProceso> tablaParticion = crearTablaParaEstado();
+                tablaParticion.setItems(FXCollections.observableArrayList(procesosParticion));
+                tabParticion.setContent(envolverTabla(tablaParticion));
+                tabParticion.setClosable(false);
+                tabPane.getTabs().add(tabParticion);
+            });
+        }
 
         int n = datos.size();
         lblContador.setText(n + (n == 1 ? " proceso" : " procesos"));
@@ -283,6 +307,47 @@ public class HistorialView {
             nuevaTab.setClosable(false);
             tabPane.getTabs().add(nuevaTab);
         }
+    }
+
+    private VBox construirContenidoParticionFinal(String nombreParticion, List<RegistroSimulacion.UsoParticion> usos) {
+        Label lblTituloParticion = new Label("Partición: " + nombreParticion);
+        lblTituloParticion.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #3D3D3D;");
+
+        long tiempoTotal = usos.stream().mapToLong(RegistroSimulacion.UsoParticion::tiempoCpu).sum();
+        Label lblTotal = new Label("Tiempo total de ejecución: " + (tiempoTotal / 1000L) + " s");
+        lblTotal.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #7B9EA6;");
+
+        TableView<RegistroSimulacion.UsoParticion> tabla = new TableView<>();
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.setPlaceholder(new Label("No hay procesos registrados para esta partición."));
+
+        TableColumn<RegistroSimulacion.UsoParticion, String> colNombre = new TableColumn<>("Nombre del Proceso");
+        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().nombreProceso()));
+
+        TableColumn<RegistroSimulacion.UsoParticion, Long> colVeces = new TableColumn<>("Veces que ocupó la partición");
+        colVeces.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().veces()).asObject());
+
+        TableColumn<RegistroSimulacion.UsoParticion, Long> colCpu = new TableColumn<>("Tiempo de CPU consumido");
+        colCpu.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().tiempoCpu()).asObject());
+        colCpu.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Long item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    return;
+                }
+                setText(String.valueOf(item / 1000L) + " s");
+            }
+        });
+
+        tabla.getColumns().addAll(colNombre, colVeces, colCpu);
+        tabla.setItems(FXCollections.observableArrayList(usos));
+
+        VBox contenedor = new VBox(10, lblTituloParticion, lblTotal, tabla);
+        contenedor.setPadding(new Insets(12, 0, 0, 0));
+        VBox.setVgrow(tabla, Priority.ALWAYS);
+        return contenedor;
     }
 
     /**

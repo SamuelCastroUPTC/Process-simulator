@@ -261,6 +261,11 @@ public class SimuladorPresenter implements IPresenter {
         return Collections.unmodifiableList(particionesMemoria);
     }
 
+    @Override
+    public List<RegistroSimulacion.UsoParticion> getUsoParticiones() {
+        return ultimoRegistro.getUsoParticiones();
+    }
+
     public Map<String, List<String>> getHistorialTexto() {
         return ultimoRegistro.getHistorialTexto();
     }
