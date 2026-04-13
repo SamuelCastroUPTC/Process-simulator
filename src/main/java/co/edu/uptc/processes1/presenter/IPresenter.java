@@ -24,7 +24,7 @@ public interface IPresenter {
         boolean pasaPorBloqueado
     );
 
-    void agregarParticion(String nombre, int tamano);
+    void agregarParticion(String nombre, long tamano);
 
     /** Inicia el calculo completo de la simulacion en bucle cerrado. */
     RegistroSimulacion iniciarSimulacion();

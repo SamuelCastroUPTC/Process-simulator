@@ -8,11 +8,11 @@ public class Particion {
 
     private final int id;
     private String nombre;
-    private final int tamanoTotal;
+    private final long tamanoTotal;
     private final List<Proceso> procesosAlojados;
     private boolean ocupada = false;
 
-    public Particion(int id, String nombre, int tamanoTotal) {
+    public Particion(int id, String nombre, long tamanoTotal) {
         this.id = id;
         this.nombre = nombre;
         this.tamanoTotal = tamanoTotal;
@@ -31,15 +31,15 @@ public class Particion {
         this.nombre = nombre;
     }
 
-    public int getTamanoTotal() {
+    public long getTamanoTotal() {
         return tamanoTotal;
     }
 
-    public int getEspacioDisponible() {
+    public long getEspacioDisponible() {
         return ocupada ? 0 : tamanoTotal;
     }
 
-    public boolean estaDisponible(int tamanioRequerido) {
+    public boolean estaDisponible(long tamanioRequerido) {
         return !ocupada && tamanioRequerido <= tamanoTotal;
     }
 
@@ -63,7 +63,7 @@ public class Particion {
         if (proceso == null) {
             return;
         }
-        if (proceso.getTamanioMemoria() > tamanoTotal) {
+        if ((long) proceso.getTamanioMemoria() > tamanoTotal) {
             return;
         }
         procesosAlojados.add(proceso);

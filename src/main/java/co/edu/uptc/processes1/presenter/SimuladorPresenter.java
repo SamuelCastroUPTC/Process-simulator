@@ -91,7 +91,7 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
-    public void agregarParticion(String nombre, int tamano) {
+    public void agregarParticion(String nombre, long tamano) {
         if (nombre == null || nombre.isBlank()) {
             view.mostrarError("El nombre de la partición es obligatorio.");
             return;

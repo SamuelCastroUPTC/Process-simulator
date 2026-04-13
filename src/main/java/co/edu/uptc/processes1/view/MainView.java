@@ -342,18 +342,18 @@ public class MainView implements IView {
         colNombre.setMaxWidth(Double.MAX_VALUE);
 
         // Espacio Total
-        TableColumn<Particion, Integer> colTotal = new TableColumn<>("Espacio Total (u)");
+        TableColumn<Particion, Long> colTotal = new TableColumn<>("Espacio Total (u)");
         colTotal.setCellValueFactory(new PropertyValueFactory<>("tamanoTotal"));
         colTotal.setPrefWidth(160);
         colTotal.setMinWidth(140);
 
         // Espacio Disponible — resaltado en verde/rojo segun ocupacion
-        TableColumn<Particion, Integer> colDisponible = new TableColumn<>("Espacio Disponible (u)");
+        TableColumn<Particion, Long> colDisponible = new TableColumn<>("Espacio Disponible (u)");
         colDisponible.setCellValueFactory(new PropertyValueFactory<>("espacioDisponible"));
         colDisponible.setPrefWidth(175);
         colDisponible.setMinWidth(155);
         colDisponible.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(Integer item, boolean empty) {
+            @Override protected void updateItem(Long item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); setStyle(""); return; }
                 setText(String.valueOf(item));
@@ -566,14 +566,16 @@ public class MainView implements IView {
     private void notificarAgregarParticion() {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
                 && formularioParticion != null) {
-            int tamanoParticion;
-            try {
-                long valor = Long.parseLong(formularioParticion.getTamano());
-                if (valor <= 0 || valor > Integer.MAX_VALUE) throw new NumberFormatException();
-                tamanoParticion = (int) valor;
-            } catch (NumberFormatException ex) {
+            long tamanoParticion;
+            String textoTamano = formularioParticion.getTamano();
+            if (textoTamano == null || textoTamano.isBlank() || !textoTamano.matches("\\d+")) {
                 mostrarError("El tamano de la particion debe ser un numero entero valido.");
                 return;
+            }
+            try {
+                tamanoParticion = Long.parseLong(textoTamano);
+            } catch (NumberFormatException ex) {
+                tamanoParticion = Long.MAX_VALUE;
             }
 
             p.agregarParticion(
