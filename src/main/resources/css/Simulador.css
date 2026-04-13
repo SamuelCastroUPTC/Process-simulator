@@ -227,27 +227,28 @@
 
 /* ── Botón Salir (coral pastel) ── */
 .btn-salir {
-    -fx-background-color: transparent;
-    -fx-text-fill: #E8A598;
+    -fx-background-color: #E8A598;
+    -fx-text-fill: #FFFFFF;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-background-radius: 8;
-    -fx-border-color: #E8A598;
-    -fx-border-width: 1.5;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
     -fx-border-radius: 8;
     -fx-padding: 8 18 8 18;
     -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(232,165,152,0.40), 6, 0, 0, 2);
 }
 
 .btn-salir:hover {
-    -fx-background-color: #E8A598;
-    -fx-text-fill: #FFFFFF;
-    -fx-effect: dropshadow(gaussian, rgba(232,165,152,0.40), 8, 0, 0, 2);
+    -fx-background-color: #D4917F;
+    -fx-effect: dropshadow(gaussian, rgba(232,165,152,0.60), 10, 0, 0, 3);
 }
 
 .btn-salir:pressed {
-    -fx-background-color: #D4917F;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #C07D6B;
+    -fx-effect: none;
+    -fx-translate-y: 1;
 }
 
 /* ── Botón Volver (en ventanas de historial) ── */
