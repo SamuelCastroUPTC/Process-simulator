@@ -184,8 +184,8 @@ public class MainView implements IView {
         lblTitulo.getStyleClass().add("card-titulo");
 
         Label lblDesc = new Label(
-            "Haga clic en el boton para abrir el formulario y agregar " +
-            "un nuevo proceso a la cola de simulacion."
+            "Haga clic en el boton para abrir agregar " +
+            "un nuevo proceso o particion a la cola de simulacion."
         );
         lblDesc.getStyleClass().add("card-subtitulo");
         lblDesc.setWrapText(true);
@@ -365,7 +365,57 @@ public class MainView implements IView {
             }
         });
 
-        tv.getColumns().addAll(colNombre, colTotal, colDisponible);
+        TableColumn<Particion, Void> colEditar = new TableColumn<>("Editar");
+        colEditar.setResizable(false);
+        colEditar.setCellFactory(c -> new TableCell<>() {
+            private final Button btn = new Button("Editar");
+            {
+                estiloAccion(btn, "#7B9EA6", false);
+                btn.setOnMouseEntered(e -> estiloAccion(btn, "#7B9EA6", true));
+                btn.setOnMouseExited(e -> estiloAccion(btn, "#7B9EA6", false));
+                btn.setOnAction(e -> {
+                    if (!isEmpty()) {
+                        Particion particion = getTableView().getItems().get(getIndex());
+                        mostrarAviso("Edicion disponible en la siguiente iteracion. Particion: " + particion.getNombre());
+                    }
+                });
+            }
+
+            @Override protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : btn);
+            }
+        });
+        colEditar.setPrefWidth(90);
+        colEditar.setMinWidth(90);
+        colEditar.setMaxWidth(110);
+
+        TableColumn<Particion, Void> colEliminar = new TableColumn<>("Eliminar");
+        colEliminar.setResizable(false);
+        colEliminar.setCellFactory(c -> new TableCell<>() {
+            private final Button btn = new Button("Eliminar");
+            {
+                estiloAccion(btn, "#E8A598", false);
+                btn.setOnMouseEntered(e -> estiloAccion(btn, "#E8A598", true));
+                btn.setOnMouseExited(e -> estiloAccion(btn, "#E8A598", false));
+                btn.setOnAction(e -> {
+                    if (!isEmpty()) {
+                        Particion particion = getTableView().getItems().get(getIndex());
+                        notificarEliminarParticion(particion);
+                    }
+                });
+            }
+
+            @Override protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : btn);
+            }
+        });
+        colEliminar.setPrefWidth(95);
+        colEliminar.setMinWidth(95);
+        colEliminar.setMaxWidth(115);
+
+        tv.getColumns().addAll(colNombre, colTotal, colDisponible, colEditar, colEliminar);
         return tv;
     }
 
@@ -386,8 +436,8 @@ public class MainView implements IView {
         HBox.setHgrow(lblEstadoSim, Priority.ALWAYS);
 
         Label lblDesc = new Label(
-            "Una vez que haya cargado todos los procesos necesarios, " +
-            "inicie la simulacion para ejecutar el ciclo de vida."
+            "Una vez que haya cargado todos los procesos, " +
+            "inicie la simulacion."
         );
         lblDesc.setWrapText(true);
         lblDesc.setStyle("-fx-text-fill: #7A7A7A; -fx-font-size: 13px;");
@@ -508,12 +558,27 @@ public class MainView implements IView {
             p.onEliminarProceso(proceso);
     }
 
+    private void notificarEliminarParticion(Particion particion) {
+        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)
+            p.onEliminarParticion(particion);
+    }
+
     private void notificarAgregarParticion() {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
                 && formularioParticion != null) {
+            int tamanoParticion;
+            try {
+                long valor = Long.parseLong(formularioParticion.getTamano());
+                if (valor <= 0 || valor > Integer.MAX_VALUE) throw new NumberFormatException();
+                tamanoParticion = (int) valor;
+            } catch (NumberFormatException ex) {
+                mostrarError("El tamano de la particion debe ser un numero entero valido.");
+                return;
+            }
+
             p.agregarParticion(
                 formularioParticion.getNombre(),
-                Integer.parseInt(formularioParticion.getTamano())
+                tamanoParticion
             );
         }
     }

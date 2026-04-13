@@ -62,9 +62,9 @@ public class FormParticion {
         HBox header = new HBox(infoHeader, btnCerrar);
         header.setAlignment(Pos.CENTER_LEFT);
 
-        txtNombre = campo("Ej: Partición A");
+        txtNombre = campo("Ej: Partición A-PAR1");
         txtTamano = campo("Ej: 256");
-        soloNumeros(txtTamano);
+        formatearConPuntosMiles(txtTamano);
 
         GridPane grid = new GridPane();
         grid.setHgap(12);
@@ -201,7 +201,7 @@ public class FormParticion {
     }
 
     public String getTamano() {
-        return txtTamano.getText().trim();
+        return txtTamano.getText().replaceAll("\\.", "").trim();
     }
 
     public void setParticionesCreadas(List<Particion> particiones) {
@@ -230,10 +230,28 @@ public class FormParticion {
         return l;
     }
 
-    private void soloNumeros(TextField tf) {
-        tf.textProperty().addListener((obs, oldV, newV) -> {
-            if (!newV.matches("\\d*")) {
-                tf.setText(newV.replaceAll("\\D", ""));
+    private void formatearConPuntosMiles(TextField campo) {
+        campo.textProperty().addListener((obs, oldVal, newVal) -> {
+            String soloDigitos = newVal.replaceAll("[^\\d]", "");
+
+            if (soloDigitos.isEmpty()) {
+                if (!newVal.equals("")) {
+                    campo.setText("");
+                }
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder(soloDigitos);
+            int insertarEn = sb.length() - 3;
+            while (insertarEn > 0) {
+                sb.insert(insertarEn, '.');
+                insertarEn -= 3;
+            }
+            String formateado = sb.toString();
+
+            if (!newVal.equals(formateado)) {
+                campo.setText(formateado);
+                campo.positionCaret(formateado.length());
             }
         });
     }

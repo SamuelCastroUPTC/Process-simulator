@@ -93,7 +93,7 @@ public class FormProcces {
         // ══════════════ PANEL IZQUIERDO — Datos basicos ═══════════════════════
         txtNombre         = campo(null);
         txtTiempo         = campo("Ej: 5");     soloNumeros(txtTiempo);
-        txtTamanioMemoria = campo("Ej: 128");   soloNumeros(txtTamanioMemoria);
+        txtTamanioMemoria = campo("Ej: 128");   formatearConPuntosMiles(txtTamanioMemoria);
 
         GridPane gridIzq = panelGrid(160);
         int fi = 0;
@@ -276,7 +276,7 @@ public class FormProcces {
 
     public String  getNombre()            { return txtNombre.getText().trim(); }
     public String  getTiempo()            { return txtTiempo.getText().trim(); }
-    public String  getTamanioMemoria()    { return txtTamanioMemoria.getText().trim(); }
+    public String  getTamanioMemoria()    { return txtTamanioMemoria.getText().replaceAll("\\.", "").trim(); }
     public boolean isPasaPorBloqueado()   { return SI.equals(cmbBloqueable.getValue()); }
 
     public void setProcesosCargados(List<Proceso> procesos) {
@@ -334,6 +334,32 @@ public class FormProcces {
     private void soloNumeros(TextField tf) {
         tf.textProperty().addListener((obs, oldV, newV) -> {
             if (!newV.matches("\\d*")) tf.setText(newV.replaceAll("\\D", ""));
+        });
+    }
+
+    private void formatearConPuntosMiles(TextField campo) {
+        campo.textProperty().addListener((obs, oldVal, newVal) -> {
+            String soloDigitos = newVal.replaceAll("[^\\d]", "");
+
+            if (soloDigitos.isEmpty()) {
+                if (!newVal.equals("")) {
+                    campo.setText("");
+                }
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder(soloDigitos);
+            int insertarEn = sb.length() - 3;
+            while (insertarEn > 0) {
+                sb.insert(insertarEn, '.');
+                insertarEn -= 3;
+            }
+            String formateado = sb.toString();
+
+            if (!newVal.equals(formateado)) {
+                campo.setText(formateado);
+                campo.positionCaret(formateado.length());
+            }
         });
     }
 

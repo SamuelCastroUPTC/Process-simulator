@@ -67,7 +67,12 @@ public class ModalUtil {
         btnOk.setOnAction(e -> modal.close());
         btnOk.setPrefWidth(160);
 
-        VBox card = new VBox(18, lblTitulo, lblMensaje, btnOk);
+        VBox card;
+        if (titulo == null || titulo.isBlank()) {
+            card = new VBox(18, lblMensaje, btnOk);
+        } else {
+            card = new VBox(18, lblTitulo, lblMensaje, btnOk);
+        }
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(36, 40, 36, 40));
         card.getStyleClass().add("modal-card");
@@ -100,11 +105,11 @@ public class ModalUtil {
     }
 
     public static void error(Window owner, String mensaje) {
-        mostrar(owner, TipoModal.ERROR, "¡Error!", mensaje);
+        mostrar(owner, TipoModal.ERROR, "", mensaje);
     }
 
     public static void exito(Window owner, String mensaje) {
-        mostrar(owner, TipoModal.EXITO, "¡Operación exitosa!", mensaje);
+        mostrar(owner, TipoModal.EXITO, "", mensaje);
     }
 
     public static void info(Window owner, String titulo, String mensaje) {

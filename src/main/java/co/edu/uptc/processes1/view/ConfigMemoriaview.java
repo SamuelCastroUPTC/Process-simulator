@@ -218,7 +218,7 @@ public class ConfigMemoriaview {
             TextField campo = new TextField();
             campo.setPromptText("Tamano en unidades");
             campo.setMaxWidth(Double.MAX_VALUE);
-            soloNumeros(campo);
+            formatearConPuntosMiles(campo);
             camposRanura.add(campo);
 
             HBox fila = new HBox(12, lbl, campo);
@@ -253,15 +253,17 @@ public class ConfigMemoriaview {
 
         List<Integer> tamanios = new ArrayList<>();
         for (int i = 0; i < camposRanura.size(); i++) {
-            String val = camposRanura.get(i).getText().trim();
-            if (val.isEmpty()) {
+            String valorLimpio = camposRanura.get(i).getText().replaceAll("\\.", "").trim();
+            if (valorLimpio.isEmpty()) {
                 mostrarError("El tamano de la Particion " + (i + 1) + " no puede estar vacio.");
                 camposRanura.get(i).requestFocus();
                 return;
             }
             int tamano;
             try {
-                tamano = Integer.parseInt(val);
+                long tamanoLong = Long.parseLong(valorLimpio);
+                if (tamanoLong <= 0 || tamanoLong > Integer.MAX_VALUE) throw new NumberFormatException();
+                tamano = (int) tamanoLong;
                 if (tamano <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
                 mostrarError("El tamano de la Particion " + (i + 1) + " debe ser un numero entero positivo.");
@@ -351,6 +353,32 @@ public class ConfigMemoriaview {
     private void soloNumeros(TextField tf) {
         tf.textProperty().addListener((obs, oldV, newV) -> {
             if (!newV.matches("\\d*")) tf.setText(newV.replaceAll("\\D", ""));
+        });
+    }
+
+    private void formatearConPuntosMiles(TextField campo) {
+        campo.textProperty().addListener((obs, oldVal, newVal) -> {
+            String soloDigitos = newVal.replaceAll("[^\\d]", "");
+
+            if (soloDigitos.isEmpty()) {
+                if (!newVal.equals("")) {
+                    campo.setText("");
+                }
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder(soloDigitos);
+            int insertarEn = sb.length() - 3;
+            while (insertarEn > 0) {
+                sb.insert(insertarEn, '.');
+                insertarEn -= 3;
+            }
+            String formateado = sb.toString();
+
+            if (!newVal.equals(formateado)) {
+                campo.setText(formateado);
+                campo.positionCaret(formateado.length());
+            }
         });
     }
 

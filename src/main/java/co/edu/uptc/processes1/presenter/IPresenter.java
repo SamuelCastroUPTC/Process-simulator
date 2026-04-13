@@ -51,4 +51,7 @@ public interface IPresenter {
      * Debe quitar el proceso de la lista antes de iniciar la simulación.
      */
     void onEliminarProceso(co.edu.uptc.processes1.model.Proceso proceso);
+    
+    /** El usuario presionó "Eliminar" en la tabla de particiones. */
+    void onEliminarParticion(Particion particion);
 }

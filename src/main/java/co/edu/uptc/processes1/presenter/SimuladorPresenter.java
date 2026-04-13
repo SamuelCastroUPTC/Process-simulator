@@ -148,7 +148,7 @@ public class SimuladorPresenter implements IPresenter {
     public void onCargarProceso() {
         String nombre = view.getNombreProceso();
         String tiempoStr = view.getTiempoProceso();
-        String tamanioMemoriaStr = view.getTamanioMemoria();
+        String tamanioMemoriaStr = view.getTamanioMemoria().replace(".", "");
         boolean pasaPorBloqueado = view.isPasaPorBloqueado();
 
         if (nombre.isBlank() || tiempoStr.isBlank() || tamanioMemoriaStr.isBlank()) {
@@ -189,7 +189,11 @@ public class SimuladorPresenter implements IPresenter {
 
         int tamanioMemoria;
         try {
-            tamanioMemoria = Integer.parseInt(tamanioMemoriaStr);
+            long tamanioMemoriaLong = Long.parseLong(tamanioMemoriaStr);
+            if (tamanioMemoriaLong <= 0 || tamanioMemoriaLong > Integer.MAX_VALUE) {
+                throw new NumberFormatException();
+            }
+            tamanioMemoria = (int) tamanioMemoriaLong;
         } catch (NumberFormatException ex) {
             view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
             return;
@@ -222,6 +226,15 @@ public class SimuladorPresenter implements IPresenter {
             proceso.setParticion(null);
         }
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
+        view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
+    }
+
+    @Override
+    public void onEliminarParticion(Particion particion) {
+        if (particion == null) {
+            return;
+        }
+        particionesMemoria.removeIf(p -> p.getId() == particion.getId());
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
     }
 
