@@ -540,8 +540,12 @@ public class MainView implements IView {
     // ══════════════════ NOTIFICACIONES AL PRESENTADOR ═════════════════════════
 
     private void notificarCargarProceso() {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)
+        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
             p.onCargarProceso();
+            if (formularioModal != null) {
+                formularioModal.setProcesosCargados(p.getProcesosCargados());
+            }
+        }
     }
 
     private void notificarIniciarSimulacion() {
@@ -601,6 +605,7 @@ public class MainView implements IView {
                 formularioParticion.getNombre(),
                 tamanoParticion
             );
+            formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
         }
     }
 

@@ -43,42 +43,46 @@ public class MotorSimulacion {
             }
         }
 
+        // Registrar INICIO una sola vez por proceso antes del ciclo de ráfagas.
+        for (ProcesoRuntime runtime : colaListos) {
+            registrarEstado(registro, RegistroSimulacion.LISTO, runtime);
+        }
+
         // === CICLO PRINCIPAL ===
         while (!colaListos.isEmpty()) {
-            List<ProcesoRuntime> pendientes = new ArrayList<>();
-            List<ProcesoRuntime> siguienteCiclo = new ArrayList<>();
             List<Particion> particionesALiberar = new ArrayList<>();
 
             // Procesar todos los procesos actualmente en colaListos en orden
-            for (ProcesoRuntime actual : colaListos) {
+            for (int i = 0; i < colaListos.size(); ) {
+                ProcesoRuntime actual = colaListos.get(i);
+
                 // Intentar asignar partición con Next Fit
                 Particion particionAsignada = buscarParticionNextFit(particiones, actual.tamanioMemoria, ultimaParticion);
 
                 if (particionAsignada == null) {
-                    // Si no se encuentra: reencolar en pendientes
-                    pendientes.add(actual);
+                    // Si no se encuentra: permanece en cola, sin alterar orden
+                    registrarEstado(registro, RegistroSimulacion.LISTO, actual);
+                    i++;
                     continue;
                 }
 
                 // Si se encuentra partición:
                 particionAsignada.ocupar();
                 actual.particion = particionAsignada;
+                boolean termino = false;
 
                 try {
-                    // a. Registrar snapshot INICIO (Listo) con partición asignada
-                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
-
-                    // b. Registrar snapshot DESPACHAR
+                    // a. Registrar snapshot DESPACHAR
                     registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
 
-                    // c. Calcular ráfaga = min(QUANTUM, tiempoRestante)
+                    // b. Calcular ráfaga = min(QUANTUM, tiempoRestante)
                     long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
                     long tiempoTrasRafaga = Math.max(0L, actual.tiempoRestante - rafaga);
 
-                    // d. Registrar snapshot PROCESADOR con tiempoRestante - rafaga como tiempo snapshot
+                    // c. Registrar snapshot PROCESADOR con tiempoRestante - rafaga como tiempo snapshot
                     registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoTrasRafaga);
 
-                    // e. Llamar registro.registrarUsoParticion(..., rafaga)
+                    // d. Llamar registro.registrarUsoParticion(..., rafaga)
                     registro.registrarUsoParticion(
                         actual.id,
                         actual.nombre,
@@ -86,33 +90,35 @@ public class MotorSimulacion {
                         rafaga
                     );
 
-                    // f. Actualizar actual.tiempoRestante -= rafaga
+                    // e. Actualizar actual.tiempoRestante -= rafaga
                     actual.tiempoRestante = tiempoTrasRafaga;
 
-                    // g. Si tiempoRestante <= 0: registrar FINALIZADO y no reencolar
+                    // f. Si tiempoRestante <= 0: registrar FINALIZADO y no reencolar
                     if (actual.tiempoRestante <= 0L) {
                         registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
+                        termino = true;
                     } else if (actual.pasaPorBloqueado) {
-                        // h. Si tiempoRestante > 0 y pasaPorBloqueado: registrar BLOQUEAR, BLOQUEADO, DESPERTAR, reencolar
+                        // g. Si tiempoRestante > 0 y pasaPorBloqueado: registrar BLOQUEAR, BLOQUEADO, DESPERTAR
                         registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
                         registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
                         registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
-                        siguienteCiclo.add(actual);
                     } else {
-                        // i. Si tiempoRestante > 0 y no pasaPorBloqueado: registrar EXPIRACION_TIEMPO, reencolar
+                        // h. Si tiempoRestante > 0 y no pasaPorBloqueado: registrar EXPIRACION_TIEMPO
                         registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
-                        siguienteCiclo.add(actual);
                     }
 
                 } finally {
-                    if (actual.tiempoRestante <= 0L) {
-                        // Terminó: liberar inmediatamente
-                        particionAsignada.liberar();
-                    } else {
-                        // Sigue vivo: liberar al final del ciclo
-                        particionesALiberar.add(particionAsignada);
-                    }
+                    // Todas las particiones del ciclo se liberan al final de la vuelta
+                    particionesALiberar.add(particionAsignada);
                     actual.particion = null;
+                }
+
+                // Mantener orden original: solo eliminar si terminó
+                if (termino) {
+                    colaListos.remove(i);
+                } else {
+                    registrarEstado(registro, RegistroSimulacion.LISTO, actual);
+                    i++;
                 }
             }
 
@@ -121,12 +127,6 @@ public class MotorSimulacion {
                 p.liberar();
             }
             particionesALiberar.clear();
-
-            // Al terminar de procesar todos los procesos del ciclo actual:
-            // colaListos = pendientes + siguienteCiclo (primero no encontraron, luego ejecutaron)
-            colaListos.clear();
-            colaListos.addAll(pendientes);
-            colaListos.addAll(siguienteCiclo);
         }
 
         // === FINALIZACIÓN ===

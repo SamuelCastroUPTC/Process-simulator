@@ -340,9 +340,7 @@ public class HistorialView {
             if (uso == null || uso.nombreProceso() == null || uso.nombreProceso().isBlank()) {
                 continue;
             }
-            for (long i = 0; i < uso.veces(); i++) {
-                pasosExpandidos.add(uso.nombreProceso());
-            }
+            pasosExpandidos.add(uso.nombreProceso());
         }
 
         ListView<String> lista = new ListView<>();

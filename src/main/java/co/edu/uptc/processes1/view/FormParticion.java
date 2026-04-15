@@ -140,7 +140,7 @@ public class FormParticion {
             if (onGuardar != null) {
                 onGuardar.run();
             }
-            modalStage.close();
+            limpiar();
         });
 
         HBox filaBotones = new HBox(16, btnCancelar, btnGuardar);
