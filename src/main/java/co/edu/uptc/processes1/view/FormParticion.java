@@ -15,6 +15,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -119,9 +120,8 @@ public class FormParticion {
 
         Button btnCancelar = new Button("Cancelar");
         btnCancelar.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: #888888; -fx-font-size: 14px;" +
-            "-fx-border-color: #DDD8D3; -fx-border-radius: 10;" +
+            "-fx-background-color: #7B9EA6; -fx-text-fill: white;" +
+            "-fx-font-size: 14px; -fx-font-weight: bold;" +
             "-fx-background-radius: 10; -fx-padding: 12 28 12 28; -fx-cursor: hand;"
         );
         btnCancelar.setOnAction(e -> modalStage.close());
@@ -163,7 +163,18 @@ public class FormParticion {
         card.setMinWidth(560);
         card.setMaxWidth(880);
 
-        Scene scene = new Scene(card);
+        StackPane overlay = new StackPane(card);
+        overlay.setAlignment(Pos.CENTER);
+        overlay.setPadding(new Insets(18));
+        overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.25);");
+        overlay.setOnMouseClicked(e -> {
+            if (e.getTarget() == overlay) {
+                modalStage.close();
+            }
+        });
+
+        Scene scene = new Scene(overlay);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
                 modalStage.close();
@@ -217,6 +228,16 @@ public class FormParticion {
         txtNombre.setText(nombre == null ? "" : nombre);
         txtTamano.setText(tamano > 0 ? String.valueOf(tamano) : "");
         txtNombre.requestFocus();
+    }
+
+    public void setModoEdicion(boolean modoEdicion) {
+        if (modoEdicion) {
+            txtNombre.setDisable(true);
+            txtTamano.setDisable(false);
+        } else {
+            txtNombre.setDisable(false);
+            txtTamano.setDisable(false);
+        }
     }
 
     public void setParticionesCreadas(List<Particion> particiones) {

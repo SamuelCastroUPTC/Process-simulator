@@ -559,13 +559,25 @@ public class MainView implements IView {
     }
 
     private void notificarEliminarProceso(Proceso proceso) {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)
+        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || proceso == null) {
+            return;
+        }
+        boolean confirmado = ModalUtil.confirmar(stage,
+            "¿Seguro que quiere borrar el proceso " + proceso.getNombre() + "?");
+        if (confirmado) {
             p.onEliminarProceso(proceso);
+        }
     }
 
     private void notificarEliminarParticion(Particion particion) {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)
+        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || particion == null) {
+            return;
+        }
+        boolean confirmado = ModalUtil.confirmar(stage,
+            "¿Seguro que quiere borrar la particion " + particion.getNombre() + "?");
+        if (confirmado) {
             p.onEliminarParticion(particion);
+        }
     }
 
     private void notificarEditarParticion(Particion particion) {
@@ -580,6 +592,7 @@ public class MainView implements IView {
             }
             formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
             formularioParticion.precargarDatos(particion.getNombre(), particion.getTamanoTotal());
+            formularioParticion.setModoEdicion(true);
             formularioParticion.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de edicion de particiones.");
@@ -688,6 +701,7 @@ public class MainView implements IView {
             if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
                 formularioModal.setProcesosCargados(p.getProcesosCargados());
             }
+            formularioModal.setModoEdicion(false);
             formularioModal.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de creacion.");
@@ -701,6 +715,7 @@ public class MainView implements IView {
                 p.onEditarParticion(null);
                 formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
             }
+            formularioParticion.setModoEdicion(false);
             formularioParticion.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de particiones.");

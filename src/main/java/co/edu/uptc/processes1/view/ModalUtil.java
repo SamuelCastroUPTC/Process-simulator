@@ -115,4 +115,90 @@ public class ModalUtil {
     public static void info(Window owner, String titulo, String mensaje) {
         mostrar(owner, TipoModal.INFO, titulo, mensaje);
     }
+
+    /**
+     * Muestra un modal de confirmación bloqueante.
+     *
+     * @param owner   Ventana propietaria (para centrarlo)
+     * @param mensaje Mensaje de confirmación
+     * @return true si el usuario presiona "Confirmar", false si presiona "Cancelar"
+     */
+    public static boolean confirmar(Window owner, String mensaje) {
+        Stage modal = new Stage();
+        modal.initOwner(owner);
+        modal.initModality(Modality.APPLICATION_MODAL);
+        modal.initStyle(StageStyle.TRANSPARENT);
+        modal.setResizable(false);
+
+        // Contenedor para el resultado
+        boolean[] resultado = { false };
+
+        Label lblMensaje = new Label(mensaje);
+        lblMensaje.getStyleClass().add("modal-mensaje");
+        lblMensaje.setWrapText(true);
+        lblMensaje.setMaxWidth(340);
+        lblMensaje.setAlignment(Pos.CENTER);
+
+        Button btnConfirmar = new Button("Confirmar");
+        btnConfirmar.getStyleClass().add("btn-modal-ok");
+        btnConfirmar.setStyle(
+            "-fx-background-color: #7B9EA6; -fx-text-fill: white;" +
+            "-fx-font-size: 14px; -fx-font-weight: bold;" +
+            "-fx-background-radius: 10; -fx-padding: 12 32 12 32; -fx-cursor: hand;"
+        );
+        btnConfirmar.setPrefWidth(140);
+        btnConfirmar.setOnAction(e -> {
+            resultado[0] = true;
+            modal.close();
+        });
+
+        Button btnCancelar = new Button("Cancelar");
+        btnCancelar.setStyle(
+            "-fx-background-color: #7B9EA6; -fx-text-fill: white;" +
+            "-fx-font-size: 14px; -fx-font-weight: bold;" +
+            "-fx-background-radius: 10;" +
+            "-fx-padding: 12 28 12 28; -fx-cursor: hand;"
+        );
+        btnCancelar.setPrefWidth(140);
+        btnCancelar.setOnAction(e -> {
+            resultado[0] = false;
+            modal.close();
+        });
+
+        HBox botonesBox = new HBox(16, btnConfirmar, btnCancelar);
+        botonesBox.setAlignment(Pos.CENTER);
+
+        VBox card = new VBox(24, lblMensaje, botonesBox);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(36, 40, 36, 40));
+        card.getStyleClass().add("modal-card");
+        card.setMaxWidth(420);
+
+        StackPane overlay = new StackPane(card);
+        overlay.setAlignment(Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(30, 30, 30, 0.40);");
+        overlay.setPrefSize(520, 420);
+
+        // Cerrar al clicar fuera de la tarjeta
+        overlay.setOnMouseClicked(e -> {
+            if (e.getTarget() == overlay) modal.close();
+        });
+
+        Scene scene = new Scene(overlay);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        scene.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                modal.close();
+            }
+        });
+
+        // Cargar CSS
+        var css = ModalUtil.class.getResource("/css/Simulador.css");
+        if (css != null) scene.getStylesheets().add(css.toExternalForm());
+
+        modal.setScene(scene);
+        modal.showAndWait();
+
+        return resultado[0];
+    }
 }

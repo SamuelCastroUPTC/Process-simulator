@@ -90,7 +90,7 @@ public class SimuladorPresenter implements IPresenter {
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
         view.limpiarFormularioCarga();
-        view.mostrarExito("Proceso '" + nombre + "' cargado correctamente.");
+        view.mostrarExito("Proceso '" + nombre + "', cargado correctamente.");
     }
 
     @Override
@@ -125,7 +125,7 @@ public class SimuladorPresenter implements IPresenter {
         int idSecuencial = particionesMemoria.size() + 1;
         particionesMemoria.add(new Particion(idSecuencial, nombreNormalizado, tamano));
         view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
-        view.mostrarExito("Partición '" + nombreNormalizado + "' creada correctamente.");
+        view.mostrarExito("Partición '" + nombreNormalizado + "', creada correctamente.");
     }
 
     @Override

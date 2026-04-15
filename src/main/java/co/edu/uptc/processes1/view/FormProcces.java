@@ -162,9 +162,8 @@ public class FormProcces {
         // ══════════════ BOTONES ═══════════════════════════════════════════════
         Button btnCancelar = new Button("Cancelar");
         btnCancelar.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: #888888; -fx-font-size: 14px;" +
-            "-fx-border-color: #DDD8D3; -fx-border-radius: 10;" +
+            "-fx-background-color: #7B9EA6; -fx-text-fill: white;" +
+            "-fx-font-size: 14px; -fx-font-weight: bold;" +
             "-fx-background-radius: 10; -fx-padding: 12 28 12 28; -fx-cursor: hand;"
         );
         btnCancelar.setOnAction(e -> modalStage.close());
@@ -198,8 +197,18 @@ public class FormProcces {
         card.setMinWidth(660);
         card.setMaxWidth(960);
 
-        Scene scene = new Scene(card);
-        scene.setFill(Color.WHITE);
+        StackPane overlay = new StackPane(card);
+        overlay.setAlignment(Pos.CENTER);
+        overlay.setPadding(new Insets(18));
+        overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.25);");
+        overlay.setOnMouseClicked(e -> {
+            if (e.getTarget() == overlay) {
+                modalStage.close();
+            }
+        });
+
+        Scene scene = new Scene(overlay);
+        scene.setFill(Color.TRANSPARENT);
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
                 modalStage.close();
@@ -272,6 +281,21 @@ public class FormProcces {
         resetCombo(cmbBloqueable);
         // Quitamos el requestFocus() de aquí, porque lo pasamos al evento setOnShown de arriba
     }
+
+    public void setModoEdicion(boolean modoEdicion) {
+        if (modoEdicion) {
+            txtNombre.setDisable(true);
+            txtTiempo.setDisable(false);
+            txtTamanioMemoria.setDisable(false);
+            cmbBloqueable.setDisable(false);
+        } else {
+            txtNombre.setDisable(false);
+            txtTiempo.setDisable(false);
+            txtTamanioMemoria.setDisable(false);
+            cmbBloqueable.setDisable(false);
+        }
+    }
+
      // ── Getters ───────────────────────────────────────────────────────────────
 
     public String  getNombre()            { return txtNombre.getText().trim(); }
