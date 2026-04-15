@@ -4,11 +4,13 @@ import co.edu.uptc.processes1.model.Proceso;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -99,7 +101,7 @@ public class FormProcces {
         int fi = 0;
         agregarFila(gridIzq, fi++, "Nombre:",                 txtNombre);
         agregarFila(gridIzq, fi++, "Tiempo (seg):",           txtTiempo);
-        agregarFila(gridIzq, fi++, "Tamano en Memoria (u):", txtTamanioMemoria);
+        agregarFila(gridIzq, fi++, "Tamano en Memoria:", txtTamanioMemoria);
 
         VBox colIzq = new VBox(10,
             seccion("DATOS BASICOS"),
@@ -197,17 +199,20 @@ public class FormProcces {
         card.setMinWidth(660);
         card.setMaxWidth(960);
 
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
         StackPane overlay = new StackPane(card);
         overlay.setAlignment(Pos.CENTER);
         overlay.setPadding(new Insets(18));
+        overlay.setPrefSize(screenBounds.getWidth(), screenBounds.getHeight());
         overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.25);");
         overlay.setOnMouseClicked(e -> {
-            if (e.getTarget() == overlay) {
+            javafx.geometry.Bounds cardBounds = card.getBoundsInParent();
+            if (!cardBounds.contains(e.getX(), e.getY())) {
                 modalStage.close();
             }
         });
 
-        Scene scene = new Scene(overlay);
+        Scene scene = new Scene(overlay, screenBounds.getWidth(), screenBounds.getHeight());
         scene.setFill(Color.TRANSPARENT);
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
@@ -218,6 +223,8 @@ public class FormProcces {
         var css = getClass().getResource("/css/Simulador.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());
 
+        modalStage.setX(screenBounds.getMinX());
+        modalStage.setY(screenBounds.getMinY());
         modalStage.setScene(scene);
     }
 
@@ -311,7 +318,7 @@ public class FormProcces {
                     continue;
                 }
                 long tiempoSegundos = proceso.getTiempoRestante() / 1000L;
-                items.add(proceso.getNombre() + " | " + tiempoSegundos + " s | " + proceso.getTamanioMemoria() + " u");
+                items.add(proceso.getNombre() + " | " + tiempoSegundos + " s | " + proceso.getTamanioMemoria() + "");
             }
         }
         listaProcesosCargados.setItems(FXCollections.observableArrayList(items));

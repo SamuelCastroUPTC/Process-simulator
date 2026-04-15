@@ -303,7 +303,7 @@ public class MainView implements IView {
             }
         });
 
-        TableColumn<Proceso, Long> colMemoria = new TableColumn<>("Memoria (u)");
+        TableColumn<Proceso, Long> colMemoria = new TableColumn<>("Memoria");
         colMemoria.setCellValueFactory(new PropertyValueFactory<>("tamanioMemoria"));
         colMemoria.setPrefWidth(110);
         colMemoria.setMinWidth(110);
@@ -343,13 +343,13 @@ public class MainView implements IView {
         colNombre.setMaxWidth(Double.MAX_VALUE);
 
         // Espacio Total
-        TableColumn<Particion, Long> colTotal = new TableColumn<>("Espacio Total (u)");
+        TableColumn<Particion, Long> colTotal = new TableColumn<>("Espacio Total");
         colTotal.setCellValueFactory(new PropertyValueFactory<>("tamanoTotal"));
         colTotal.setPrefWidth(160);
         colTotal.setMinWidth(140);
 
         // Espacio Disponible — resaltado en verde/rojo segun ocupacion
-        TableColumn<Particion, Long> colDisponible = new TableColumn<>("Espacio Disponible (u)");
+        TableColumn<Particion, Long> colDisponible = new TableColumn<>("Espacio Disponible");
         colDisponible.setCellValueFactory(new PropertyValueFactory<>("espacioDisponible"));
         colDisponible.setPrefWidth(175);
         colDisponible.setMinWidth(155);
