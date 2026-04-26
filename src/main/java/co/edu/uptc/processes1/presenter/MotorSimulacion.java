@@ -30,7 +30,7 @@ public class MotorSimulacion {
         // 1. Ordenar procesos por tiempo de ejecución ascendente
         List<ProcesoRuntime> procesosOrdenados = procesosIniciales.stream()
             .map(ProcesoRuntime::desde)
-            .sorted((a, b) -> Long.compare(a.tiempoRestante, b.tiempoRestante))
+            .sorted((a, b) -> a.tiempoRestante.compareTo(b.tiempoRestante))
             .toList();
 
         List<ProcesoRuntime> colaListos = new ArrayList<>();
