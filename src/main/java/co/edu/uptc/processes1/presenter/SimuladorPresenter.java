@@ -1,9 +1,10 @@
 package co.edu.uptc.processes1.presenter;
 
-import co.edu.uptc.processes1.model.Particion;
+import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.view.IView;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,18 +12,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.math.BigInteger;
 import java.util.stream.Collectors;
 
 public class SimuladorPresenter implements IPresenter {
 
     private final IView view;
     private final MotorSimulacion motorSimulacion;
-    private final List<Particion> particionesMemoria;
 
+    private MemoriaVariable memoriaVariable;
     private final List<Proceso> procesosCargados = new ArrayList<>();
     private final Map<String, List<RegistroSimulacion.SnapshotProceso>> historialesPorEstado = new LinkedHashMap<>();
-    private Particion particionEnEdicion;
     private int contadorId = 1;
     private RegistroSimulacion ultimoRegistro = new RegistroSimulacion();
 
@@ -40,42 +39,22 @@ public class SimuladorPresenter implements IPresenter {
     );
 
     public SimuladorPresenter(IView view) {
-        this(view, List.of(), new MotorSimulacion());
+        this(view, BigInteger.valueOf(1024L), new MotorSimulacion());
     }
 
-    public SimuladorPresenter(IView view, List<Integer> tamaniosParticiones) {
-        this(view, tamaniosParticiones, new MotorSimulacion());
+    public SimuladorPresenter(IView view, BigInteger tamanioTotalMemoria) {
+        this(view, tamanioTotalMemoria, new MotorSimulacion());
     }
 
-    public SimuladorPresenter(IView view, MotorSimulacion motorSimulacion) {
-        this(view, List.of(), motorSimulacion);
-    }
-
-    public SimuladorPresenter(IView view, List<Integer> tamaniosParticiones, MotorSimulacion motorSimulacion) {
+    public SimuladorPresenter(IView view, BigInteger tamanioTotalMemoria, MotorSimulacion motorSimulacion) {
         this.view = view;
         this.motorSimulacion = motorSimulacion;
-        this.particionesMemoria = new ArrayList<>();
-        int idSecuencial = 1;
-        for (Integer tamano : tamaniosParticiones) {
-            if (tamano != null && tamano > 0) {
-                this.particionesMemoria.add(new Particion(
-                    idSecuencial,
-                    "Partición " + idSecuencial,
-                    BigInteger.valueOf(tamano)
-                ));
-                idSecuencial++;
-            }
-        }
+        this.memoriaVariable = new MemoriaVariable(tamanioTotalMemoria);
         ESTADOS.forEach(estado -> historialesPorEstado.put(estado, new ArrayList<>()));
     }
 
     @Override
-    public void agregarProceso(
-        String nombre,
-        BigInteger tiempo,
-        BigInteger tamanioMemoria,
-        boolean pasaPorBloqueado
-    ) {
+    public void agregarProceso(String nombre, BigInteger tiempo, BigInteger tamanioMemoria, boolean pasaPorBloqueado) {
         if (existeNombre(nombre)) {
             view.mostrarError("El nombre ya existe");
             return;
@@ -92,44 +71,9 @@ public class SimuladorPresenter implements IPresenter {
         procesosCargados.add(nuevo);
 
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
-        view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
+        view.actualizarEstadoMemoria(memoriaVariable);
         view.limpiarFormularioCarga();
         view.mostrarExito("Proceso '" + nombre + "', cargado correctamente.");
-    }
-
-    @Override
-    public void agregarParticion(String nombre, BigInteger tamano) {
-        if (nombre == null || nombre.isBlank()) {
-            view.mostrarError("El nombre de la partición es obligatorio.");
-            return;
-        }
-        if (tamano.compareTo(BigInteger.ZERO) <= 0) {
-            view.mostrarError("El tamaño de la partición debe ser mayor a 0.");
-            return;
-        }
-        String nombreNormalizado = nombre.trim();
-        int idParticionEditada = particionEnEdicion != null ? particionEnEdicion.getId() : -1;
-        boolean nombreDuplicado = particionesMemoria.stream()
-            .anyMatch(p -> p.getId() != idParticionEditada
-                && p.getNombre().equalsIgnoreCase(nombreNormalizado));
-        if (nombreDuplicado) {
-            view.mostrarError("Ya existe una partición con ese nombre.");
-            return;
-        }
-
-        if (particionEnEdicion != null) {
-            particionEnEdicion.setNombre(nombreNormalizado);
-            particionEnEdicion.setTamanoTotal(tamano);
-            particionEnEdicion = null;
-            view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
-            view.mostrarExito("Partición actualizada correctamente.");
-            return;
-        }
-
-        int idSecuencial = particionesMemoria.size() + 1;
-        particionesMemoria.add(new Particion(idSecuencial, nombreNormalizado, tamano));
-        view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
-        view.mostrarExito("Partición '" + nombreNormalizado + "', creada correctamente.");
     }
 
     @Override
@@ -146,13 +90,14 @@ public class SimuladorPresenter implements IPresenter {
             .sorted(Comparator.comparing(Proceso::getTiempoRestante))
             .collect(Collectors.toList());
 
-        ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados, particionesMemoria);
+        ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados, memoriaVariable);
         sincronizarHistorialesConRegistro(ultimoRegistro);
 
         procesosCargados.clear();
-        particionesMemoria.forEach(Particion::liberar);
+        memoriaVariable = new MemoriaVariable(memoriaVariable.getTamanioTotal());
+
         view.actualizarTablaCargados(new ArrayList<>());
-        view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
+        view.actualizarEstadoMemoria(memoriaVariable);
         view.actualizarEstadoSimulacion("Simulacion finalizada.");
         view.mostrarExito("Simulacion completada. Puede revisar el historial por estado.");
         return ultimoRegistro;
@@ -161,6 +106,16 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public List<Proceso> getProcesosCargados() {
         return Collections.unmodifiableList(procesosCargados);
+    }
+
+    @Override
+    public MemoriaVariable getMemoriaVariable() {
+        return memoriaVariable;
+    }
+
+    @Override
+    public List<RegistroSimulacion.UsoParticion> getUsoParticiones() {
+        return ultimoRegistro.getUsoParticiones();
     }
 
     @Override
@@ -185,7 +140,6 @@ public class SimuladorPresenter implements IPresenter {
             view.mostrarError("El tiempo de ejecucion debe ser mayor a 0");
             return;
         }
-
         BigInteger tiempo = tiempoSegundos.multiply(BigInteger.valueOf(1000L));
 
         if (!tamanioMemoriaStr.matches("\\d+")) {
@@ -193,18 +147,13 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        BigInteger tamanioMemoriaBig = new BigInteger(tamanioMemoriaStr);
-        if (tamanioMemoriaBig.signum() <= 0) {
+        BigInteger tamanioMemoria = new BigInteger(tamanioMemoriaStr);
+        if (tamanioMemoria.signum() <= 0) {
             view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
             return;
         }
 
-        agregarProceso(
-            nombre,
-            tiempo,
-            tamanioMemoriaBig,
-            pasaPorBloqueado
-        );
+        agregarProceso(nombre, tiempo, tamanioMemoria, pasaPorBloqueado);
     }
 
     @Override
@@ -215,34 +164,8 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void onEliminarProceso(Proceso proceso) {
         procesosCargados.removeIf(p -> p.getId() == proceso.getId());
-        Particion particionAsignada = proceso.getParticion();
-        if (particionAsignada != null) {
-            particionAsignada.removerProceso(proceso);
-            proceso.setParticion(null);
-        }
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
-        view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
-    }
-
-    @Override
-    public void onEliminarParticion(Particion particion) {
-        if (particion == null) {
-            return;
-        }
-        if (particionEnEdicion != null && particionEnEdicion.getId() == particion.getId()) {
-            particionEnEdicion = null;
-        }
-        particionesMemoria.removeIf(p -> p.getId() == particion.getId());
-        view.actualizarTablaParticiones(new ArrayList<>(particionesMemoria));
-    }
-
-    @Override
-    public void onEditarParticion(Particion particion) {
-        this.particionEnEdicion = particion;
-    }
-
-    public Particion getParticionEnEdicion() {
-        return particionEnEdicion;
+        view.actualizarEstadoMemoria(memoriaVariable);
     }
 
     @Override
@@ -250,15 +173,6 @@ public class SimuladorPresenter implements IPresenter {
         String estadoCanonico = normalizarEstado(estado);
         List<RegistroSimulacion.SnapshotProceso> datos = historialesPorEstado.getOrDefault(estadoCanonico, List.of());
         view.mostrarHistorial(estado, datos);
-    }
-
-    public List<Particion> getParticionesMemoria() {
-        return Collections.unmodifiableList(particionesMemoria);
-    }
-
-    @Override
-    public List<RegistroSimulacion.UsoParticion> getUsoParticiones() {
-        return ultimoRegistro.getUsoParticiones();
     }
 
     public Map<String, List<String>> getHistorialTexto() {

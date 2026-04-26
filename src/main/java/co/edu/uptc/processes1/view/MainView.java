@@ -1,15 +1,29 @@
 package co.edu.uptc.processes1.view;
 
-import co.edu.uptc.processes1.model.Particion;
+import co.edu.uptc.processes1.model.BloqueMemoria;
+import co.edu.uptc.processes1.model.HuecoMemoria;
+import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.presenter.RegistroSimulacion;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -19,9 +33,9 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,21 +43,20 @@ import java.util.Map;
 public class MainView implements IView {
 
     private final Stage stage;
-    private FormProcces   formularioModal;
-    private FormParticion formularioParticion;
+    private FormProcces formularioModal;
 
-    // ── CAMBIO 1: nueva variable de clase para la tabla de particiones ────────
-    private TableView<Proceso>    tablaCargados;
-    private TableView<Particion>  tablaParticiones;   // <-- NUEVO
+    private TableView<Proceso> tablaCargados;
+    private VBox panelMemoria;
 
     private Button btnIniciar;
-    private Label  lblEstadoSim;
+    private Label lblEstadoSim;
     private Stage stageHistoriales;
 
     private final Map<String, HistorialView> ventanasHistorial = new HashMap<>();
     private Object presenter;
 
-    private double dragOffsetX, dragOffsetY;
+    private double dragOffsetX;
+    private double dragOffsetY;
 
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO, "Despachar", "Procesador",
@@ -51,8 +64,6 @@ public class MainView implements IView {
         "Despertar", RegistroSimulacion.NO_EJECUTADO, "Salida",
         RegistroSimulacion.FINALIZACION_PARTICIONES
     };
-
-    // ── Constructor ───────────────────────────────────────────────────────────
 
     public MainView(Stage stage) {
         this.stage = stage;
@@ -65,14 +76,13 @@ public class MainView implements IView {
     public void setPresenter(Object presenter) {
         this.presenter = presenter;
         asegurarFormularioModal();
-        asegurarFormularioParticion();
     }
 
     public void mostrar() {
         VBox root = new VBox();
         root.getStyleClass().add("ventana-principal");
 
-        HBox     barra  = construirBarraTitulo();
+        HBox barra = construirBarraTitulo();
         GridPane cuerpo = construirCuerpo();
         VBox.setVgrow(cuerpo, Priority.ALWAYS);
 
@@ -95,8 +105,6 @@ public class MainView implements IView {
         stage.setScene(scene);
         stage.show();
     }
-
-    // ══════════════════ BARRA DE TITULO ══════════════════════════════════════
 
     private HBox construirBarraTitulo() {
         Label lblTitulo = new Label("Simulador de Procesos");
@@ -128,7 +136,10 @@ public class MainView implements IView {
         barra.setAlignment(Pos.CENTER_LEFT);
         barra.setPadding(new Insets(14, 24, 14, 28));
 
-        barra.setOnMousePressed(e -> { dragOffsetX = e.getSceneX(); dragOffsetY = e.getSceneY(); });
+        barra.setOnMousePressed(e -> {
+            dragOffsetX = e.getSceneX();
+            dragOffsetY = e.getSceneY();
+        });
         barra.setOnMouseDragged(e -> {
             stage.setX(e.getScreenX() - dragOffsetX);
             stage.setY(e.getScreenY() - dragOffsetY);
@@ -136,8 +147,6 @@ public class MainView implements IView {
 
         return barra;
     }
-
-    // ══════════════════ CUERPO — LAYOUT PRINCIPAL ════════════════════════════
 
     private GridPane construirCuerpo() {
         GridPane grid = new GridPane();
@@ -170,24 +179,20 @@ public class MainView implements IView {
         GridPane.setFillWidth(columnaIzq, true);
         GridPane.setFillHeight(columnaIzq, true);
 
-        // CAMBIO 2: ahora devuelve el card con TabPane dentro
         VBox supDer = construirCuadranteTabla();
         grid.add(supDer, 1, 0);
-        GridPane.setFillWidth(supDer,  true);
+        GridPane.setFillWidth(supDer, true);
         GridPane.setFillHeight(supDer, true);
 
         return grid;
     }
-
-    // ══════════════════ SUP-IZQ: Crear proceso ════════════════════════════════
 
     private VBox construirCuadranteCrear() {
         Label lblTitulo = new Label("Gestion de Procesos");
         lblTitulo.getStyleClass().add("card-titulo");
 
         Label lblDesc = new Label(
-            "Haga clic en el boton para abrir agregar " +
-            "un nuevo proceso o particion a la cola de simulacion."
+            "Haga clic en el boton para agregar un nuevo proceso a la cola de simulacion."
         );
         lblDesc.getStyleClass().add("card-subtitulo");
         lblDesc.setWrapText(true);
@@ -197,14 +202,7 @@ public class MainView implements IView {
         btnCrear.setMaxWidth(Double.MAX_VALUE);
         btnCrear.setOnAction(e -> abrirFormularioSeguro());
         btnCrear.setOnMouseEntered(e -> aplicarEstiloBtnCrear(btnCrear, true));
-        btnCrear.setOnMouseExited (e -> aplicarEstiloBtnCrear(btnCrear, false));
-
-        Button btnCrearParticiones = new Button("Crear Particiones");
-        aplicarEstiloBtnCrear(btnCrearParticiones, false);
-        btnCrearParticiones.setMaxWidth(Double.MAX_VALUE);
-        btnCrearParticiones.setOnAction(e -> abrirFormularioParticionSeguro());
-        btnCrearParticiones.setOnMouseEntered(e -> aplicarEstiloBtnCrear(btnCrearParticiones, true));
-        btnCrearParticiones.setOnMouseExited (e -> aplicarEstiloBtnCrear(btnCrearParticiones, false));
+        btnCrear.setOnMouseExited(e -> aplicarEstiloBtnCrear(btnCrear, false));
 
         Label lblHint = new Label(
             "Los procesos se agregan a la tabla de la derecha antes de iniciar la simulacion."
@@ -215,8 +213,7 @@ public class MainView implements IView {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        VBox contenido = new VBox(12, lblDesc, spacer, btnCrear, btnCrearParticiones,
-                                  new Separator(), lblHint);
+        VBox contenido = new VBox(12, lblDesc, spacer, btnCrear, new Separator(), lblHint);
         VBox card = new VBox(10, lblTitulo, contenido);
         card.getStyleClass().add("card");
         card.setMaxHeight(Double.MAX_VALUE);
@@ -227,7 +224,7 @@ public class MainView implements IView {
     }
 
     private void aplicarEstiloBtnCrear(Button btn, boolean hover) {
-        String bg     = hover ? "#6A8F98" : "#7B9EA6";
+        String bg = hover ? "#6A8F98" : "#7B9EA6";
         String shadow = hover
             ? "dropshadow(gaussian, rgba(123,158,166,0.55), 16, 0, 0, 5)"
             : "dropshadow(gaussian, rgba(123,158,166,0.40), 12, 0, 0, 4)";
@@ -242,44 +239,6 @@ public class MainView implements IView {
         );
     }
 
-    // ══════════════════ SUP-DER: Tabla de procesos ═══════════════════════════
-
-    private VBox construirCuadranteTabla() {
-        Label lblTitulo = new Label("Cola de Procesos");
-        lblTitulo.getStyleClass().add("card-titulo");
-
-        Label lblSub = new Label("Procesos cargados y estado actual de las particiones de memoria");
-        lblSub.getStyleClass().add("card-subtitulo");
-
-        tablaCargados = construirTablaProcesos();
-        tablaCargados.setMaxHeight(Double.MAX_VALUE);
-        VBox.setVgrow(tablaCargados, Priority.ALWAYS);
-
-        Label lblParticiones = new Label("Estado de Particiones");
-        lblParticiones.getStyleClass().add("card-titulo");
-
-        tablaParticiones = construirTablaParticiones();
-        tablaParticiones.setMaxHeight(Double.MAX_VALUE);
-        VBox.setVgrow(tablaParticiones, Priority.ALWAYS);
-
-        // ── Card contenedor ───────────────────────────────────────────────────
-        VBox card = new VBox(10,
-            lblTitulo, lblSub, new Separator(),
-            tablaCargados,
-            new Separator(), lblParticiones,
-            tablaParticiones
-        );
-        card.getStyleClass().add("card");
-        card.setMaxHeight(Double.MAX_VALUE);
-        card.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(tablaCargados, Priority.ALWAYS);
-        VBox.setVgrow(tablaParticiones, Priority.ALWAYS);
-
-        return card;
-    }
-
-    // ══════════════════ TABLA DE PROCESOS ════════════════════════════════════
-
     @SuppressWarnings("unchecked")
     private TableView<Proceso> construirTablaProcesos() {
         TableView<Proceso> tv = new TableView<>();
@@ -288,28 +247,29 @@ public class MainView implements IView {
 
         TableColumn<Proceso, String> colNombre = new TableColumn<>("Nombre");
         colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        colNombre.setPrefWidth(120);
+        colNombre.setPrefWidth(140);
         colNombre.setMinWidth(120);
-        colNombre.setMaxWidth(Double.MAX_VALUE);   // absorbe el espacio sobrante
+        colNombre.setMaxWidth(Double.MAX_VALUE);
 
         TableColumn<Proceso, BigInteger> colTiempo = new TableColumn<>("Tiempo (s)");
         colTiempo.setCellValueFactory(new PropertyValueFactory<>("tiempo"));
-        colTiempo.setPrefWidth(100);
+        colTiempo.setPrefWidth(110);
         colTiempo.setMinWidth(100);
         colTiempo.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(BigInteger item, boolean empty) {
+            @Override
+            protected void updateItem(BigInteger item, boolean empty) {
                 super.updateItem(item, empty);
-                setText((empty || item == null) ? null
-                    : item.divide(BigInteger.valueOf(1000L)).toString());
+                setText((empty || item == null) ? null : item.divide(BigInteger.valueOf(1000L)).toString());
             }
         });
 
         TableColumn<Proceso, BigInteger> colMemoria = new TableColumn<>("Memoria");
         colMemoria.setCellValueFactory(new PropertyValueFactory<>("tamanioMemoria"));
-        colMemoria.setPrefWidth(110);
+        colMemoria.setPrefWidth(130);
         colMemoria.setMinWidth(110);
         colMemoria.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(BigInteger item, boolean empty) {
+            @Override
+            protected void updateItem(BigInteger item, boolean empty) {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null : item.toString());
             }
@@ -320,114 +280,52 @@ public class MainView implements IView {
         TableColumn<Proceso, Void> colEditar = accionCol("Editar", "#7B9EA6", proceso ->
             mostrarAviso("Edicion disponible en la siguiente iteracion. Proceso: " + proceso.getNombre())
         );
-        colEditar.setPrefWidth(90); colEditar.setMinWidth(90); colEditar.setMaxWidth(110);
-
-        TableColumn<Proceso, Void> colEliminar = accionCol("Eliminar", "#E8A598",
-            this::notificarEliminarProceso);
-        colEliminar.setPrefWidth(95); colEliminar.setMinWidth(95); colEliminar.setMaxWidth(115);
-
-        tv.getColumns().addAll(
-            colNombre, colTiempo, colMemoria,
-            colBloq, colEditar, colEliminar
-        );
-        return tv;
-    }
-
-    // ══════════════════ TABLA DE PARTICIONES (NUEVA) ══════════════════════════
-    // CAMBIO 3: nuevo método
-
-    @SuppressWarnings("unchecked")
-    private TableView<Particion> construirTablaParticiones() {
-        TableView<Particion> tv = new TableView<>();
-        tv.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        tv.setPlaceholder(new Label("No hay particiones configuradas."));
-
-        // Nombre — absorbe el espacio sobrante igual que en la tabla de procesos
-        TableColumn<Particion, String> colNombre = new TableColumn<>("Nombre");
-        colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        colNombre.setPrefWidth(160);
-        colNombre.setMinWidth(120);
-        colNombre.setMaxWidth(Double.MAX_VALUE);
-
-        // Espacio Total
-        TableColumn<Particion, BigInteger> colTotal = new TableColumn<>("Espacio Total");
-        colTotal.setCellValueFactory(new PropertyValueFactory<>("tamanoTotal"));
-        colTotal.setPrefWidth(160);
-        colTotal.setMinWidth(140);
-
-        // Espacio Disponible — resaltado en verde/rojo segun ocupacion
-        TableColumn<Particion, BigInteger> colDisponible = new TableColumn<>("Espacio Disponible");
-        colDisponible.setCellValueFactory(new PropertyValueFactory<>("espacioDisponible"));
-        colDisponible.setPrefWidth(175);
-        colDisponible.setMinWidth(155);
-        colDisponible.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(BigInteger item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) { setText(null); setStyle(""); return; }
-                setText(item.toString());
-                // Verde si hay espacio, coral si esta llena
-                setStyle(item.compareTo(BigInteger.ZERO) > 0
-                    ? "-fx-text-fill: #5A8550; -fx-font-weight: bold;"
-                    : "-fx-text-fill: #C0504D; -fx-font-weight: bold;"
-                );
-            }
-        });
-
-        TableColumn<Particion, Void> colEditar = new TableColumn<>("Editar");
-        colEditar.setResizable(false);
-        colEditar.setCellFactory(c -> new TableCell<>() {
-            private final Button btn = new Button("Editar");
-            {
-                estiloAccion(btn, "#7B9EA6", false);
-                btn.setOnMouseEntered(e -> estiloAccion(btn, "#7B9EA6", true));
-                btn.setOnMouseExited(e -> estiloAccion(btn, "#7B9EA6", false));
-                btn.setOnAction(e -> {
-                    if (!isEmpty()) {
-                        Particion particion = getTableView().getItems().get(getIndex());
-                        notificarEditarParticion(particion);
-                    }
-                });
-            }
-
-            @Override protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : btn);
-            }
-        });
         colEditar.setPrefWidth(90);
         colEditar.setMinWidth(90);
-        colEditar.setMaxWidth(110);
 
-        TableColumn<Particion, Void> colEliminar = new TableColumn<>("Eliminar");
-        colEliminar.setResizable(false);
-        colEliminar.setCellFactory(c -> new TableCell<>() {
-            private final Button btn = new Button("Eliminar");
-            {
-                estiloAccion(btn, "#E8A598", false);
-                btn.setOnMouseEntered(e -> estiloAccion(btn, "#E8A598", true));
-                btn.setOnMouseExited(e -> estiloAccion(btn, "#E8A598", false));
-                btn.setOnAction(e -> {
-                    if (!isEmpty()) {
-                        Particion particion = getTableView().getItems().get(getIndex());
-                        notificarEliminarParticion(particion);
-                    }
-                });
-            }
-
-            @Override protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : btn);
-            }
-        });
-        colEliminar.setPrefWidth(95);
+        TableColumn<Proceso, Void> colEliminar = accionCol("Eliminar", "#E8A598", this::notificarEliminarProceso);
+        colEliminar.setPrefWidth(100);
         colEliminar.setMinWidth(95);
-        colEliminar.setMaxWidth(115);
 
-        tv.getColumns().addAll(colNombre, colTotal, colDisponible, colEditar, colEliminar);
+        tv.getColumns().addAll(colNombre, colTiempo, colMemoria, colBloq, colEditar, colEliminar);
         return tv;
     }
 
-    // ══════════════════ INF-IZQ: Control de simulacion ════════════════════════
+    private VBox construirCuadranteTabla() {
+        Label lblTitulo = new Label("Cola de Procesos");
+        lblTitulo.getStyleClass().add("card-titulo");
+
+        Label lblSub = new Label("Procesos cargados y estado actual de la memoria variable");
+        lblSub.getStyleClass().add("card-subtitulo");
+
+        tablaCargados = construirTablaProcesos();
+        tablaCargados.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(tablaCargados, Priority.ALWAYS);
+
+        Label lblMemoria = new Label("Estado de Memoria");
+        lblMemoria.getStyleClass().add("card-titulo");
+
+        panelMemoria = new VBox(6);
+        panelMemoria.setPadding(new Insets(8, 10, 8, 10));
+        panelMemoria.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #DDD8D3; -fx-border-width: 1;");
+        panelMemoria.setMinHeight(220);
+        panelMemoria.setPrefHeight(260);
+        VBox.setVgrow(panelMemoria, Priority.ALWAYS);
+
+        VBox card = new VBox(10,
+            lblTitulo, lblSub, new Separator(),
+            tablaCargados,
+            new Separator(), lblMemoria,
+            panelMemoria
+        );
+        card.getStyleClass().add("card");
+        card.setMaxHeight(Double.MAX_VALUE);
+        card.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(tablaCargados, Priority.ALWAYS);
+        VBox.setVgrow(panelMemoria, Priority.ALWAYS);
+
+        return card;
+    }
 
     private VBox construirCuadranteIniciar() {
         Label lblTitulo = new Label("Control de Simulacion");
@@ -444,8 +342,7 @@ public class MainView implements IView {
         HBox.setHgrow(lblEstadoSim, Priority.ALWAYS);
 
         Label lblDesc = new Label(
-            "Una vez que haya cargado todos los procesos, " +
-            "inicie la simulacion."
+            "Una vez que haya cargado todos los procesos, inicie la simulacion."
         );
         lblDesc.setWrapText(true);
         lblDesc.setStyle("-fx-text-fill: #7A7A7A; -fx-font-size: 13px;");
@@ -483,9 +380,6 @@ public class MainView implements IView {
         return card;
     }
 
-    // ══════════════════ HELPERS DE COLUMNAS ══════════════════════════════════
-
-    /** Columna booleana que muestra "Si" (verde) / "No" (gris). */
     @SuppressWarnings("unchecked")
     private TableColumn<Proceso, Boolean> boolCol(String header, String property, double width) {
         TableColumn<Proceso, Boolean> col = new TableColumn<>(header);
@@ -493,23 +387,25 @@ public class MainView implements IView {
         col.setPrefWidth(width);
         col.setMinWidth(width);
         col.setCellFactory(c -> new TableCell<>() {
-            @Override protected void updateItem(Boolean item, boolean empty) {
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) { setGraphic(null); setText(null); return; }
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
                 Label b = new Label(item ? "Si" : "No");
                 b.setStyle(item
                     ? "-fx-text-fill: #5A8550; -fx-font-weight: bold;"
                     : "-fx-text-fill: #BBBBBB; -fx-font-weight: bold;");
-                setGraphic(b); setText(null);
+                setGraphic(b);
+                setText(null);
             }
         });
         return col;
     }
 
-    /**
-     * Columna de accion con un boton de texto (sin iconos).
-     * El color alterna entre relleno y borde segun hover.
-     */
     @SuppressWarnings("unchecked")
     private TableColumn<Proceso, Void> accionCol(String etiqueta, String colorHex,
                                                   java.util.function.Consumer<Proceso> accion) {
@@ -520,12 +416,14 @@ public class MainView implements IView {
             {
                 estiloAccion(btn, colorHex, false);
                 btn.setOnMouseEntered(e -> estiloAccion(btn, colorHex, true));
-                btn.setOnMouseExited (e -> estiloAccion(btn, colorHex, false));
+                btn.setOnMouseExited(e -> estiloAccion(btn, colorHex, false));
                 btn.setOnAction(e -> {
                     if (!isEmpty()) accion.accept(getTableView().getItems().get(getIndex()));
                 });
             }
-            @Override protected void updateItem(Void item, boolean empty) {
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 setGraphic(empty ? null : btn);
             }
@@ -536,7 +434,7 @@ public class MainView implements IView {
     private void estiloAccion(Button btn, String colorHex, boolean hover) {
         btn.setStyle(
             "-fx-background-color: " + (hover ? colorHex : "transparent") + ";" +
-            "-fx-text-fill: "        + (hover ? "white"  : colorHex)      + ";" +
+            "-fx-text-fill: " + (hover ? "white" : colorHex) + ";" +
             "-fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;" +
             "-fx-padding: 3 8 3 8;" +
             "-fx-border-color: " + colorHex + "; -fx-border-radius: 6;" +
@@ -544,25 +442,27 @@ public class MainView implements IView {
         );
     }
 
-    // ══════════════════ NOTIFICACIONES AL PRESENTADOR ═════════════════════════
-
     private void notificarCargarProceso() {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
             p.onCargarProceso();
             if (formularioModal != null) {
                 formularioModal.setProcesosCargados(p.getProcesosCargados());
             }
+            actualizarEstadoMemoria(p.getMemoriaVariable());
         }
     }
 
     private void notificarIniciarSimulacion() {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)
+        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
             p.onIniciarSimulacion();
+            actualizarEstadoMemoria(p.getMemoriaVariable());
+        }
     }
 
     private void notificarVerHistorial(String estado) {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)
+        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
             p.onVerHistorial(estado);
+        }
     }
 
     private void notificarEliminarProceso(Proceso proceso) {
@@ -573,71 +473,24 @@ public class MainView implements IView {
             "¿Seguro que quiere borrar el proceso " + proceso.getNombre() + "?");
         if (confirmado) {
             p.onEliminarProceso(proceso);
+            actualizarEstadoMemoria(p.getMemoriaVariable());
         }
     }
 
-    private void notificarEliminarParticion(Particion particion) {
-        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || particion == null) {
-            return;
-        }
-        boolean confirmado = ModalUtil.confirmar(stage,
-            "¿Seguro que quiere borrar la particion " + particion.getNombre() + "?");
-        if (confirmado) {
-            p.onEliminarParticion(particion);
-        }
+    @Override
+    public void mostrarError(String msg) {
+        ModalUtil.error(stage, msg);
     }
 
-    private void notificarEditarParticion(Particion particion) {
-        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || particion == null) {
-            return;
-        }
-        p.onEditarParticion(particion);
-        try {
-            asegurarFormularioParticion();
-            if (formularioParticion.estaMostrandose()) {
-                return;
-            }
-            formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
-            formularioParticion.precargarDatos(particion.getNombre(), particion.getTamanoTotal());
-            formularioParticion.setModoEdicion(true);
-            formularioParticion.mostrar();
-        } catch (Exception ex) {
-            mostrarError("No fue posible abrir el formulario de edicion de particiones.");
-        }
+    @Override
+    public void mostrarAviso(String msg) {
+        ModalUtil.info(stage, "Aviso", msg);
     }
 
-    private void notificarAgregarParticion() {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
-                && formularioParticion != null) {
-            String textoTamano = formularioParticion.getTamano();
-            if (textoTamano == null || textoTamano.isBlank() || !textoTamano.matches("\\d+")) {
-                mostrarError("El tamano de la particion debe ser un numero entero valido.");
-                return;
-            }
-            BigInteger tamanoParticion;
-            try {
-                tamanoParticion = new BigInteger(textoTamano);
-            } catch (NumberFormatException ex) {
-                return;
-            }
-            if (tamanoParticion.compareTo(BigInteger.ZERO) <= 0) {
-                mostrarError("El tamano de la particion debe ser mayor a 0.");
-                return;
-            }
-
-            p.agregarParticion(
-                formularioParticion.getNombre(),
-                tamanoParticion
-            );
-            formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
-        }
+    @Override
+    public void mostrarExito(String msg) {
+        ModalUtil.exito(stage, msg);
     }
-
-    // ══════════════════ IMPLEMENTACION DE IView ═══════════════════════════════
-
-    @Override public void mostrarError(String msg)  { ModalUtil.error(stage, msg); }
-    @Override public void mostrarAviso(String msg)  { ModalUtil.info(stage, "Aviso", msg); }
-    @Override public void mostrarExito(String msg)  { ModalUtil.exito(stage, msg); }
 
     @Override
     public void actualizarTablaCargados(List<Proceso> procesos) {
@@ -649,22 +502,70 @@ public class MainView implements IView {
         );
     }
 
-    /**
-     * Actualiza la tabla de particiones en la segunda pestana.
-     * Llama este metodo desde el Presentador cada vez que cambie
-     * el estado de la memoria (alta, baja, compactacion, etc.).
-     */
     @Override
-    public void actualizarTablaParticiones(List<Particion> particiones) {
-        if (tablaParticiones != null) {
-            tablaParticiones.setItems(FXCollections.observableArrayList(particiones));
-            tablaParticiones.refresh(); // <-- FUERZA EL REPINTADO DE LA TABLA
+    public void actualizarEstadoMemoria(MemoriaVariable memoria) {
+        panelMemoria.getChildren().clear();
+        if (memoria == null) {
+            panelMemoria.getChildren().add(new Label("Memoria no disponible."));
+            return;
+        }
+
+        Label resumen = new Label(
+            "Total: " + memoria.getTamanioTotal() +
+            " | Libre: " + memoria.getEspacioLibreTotal() +
+            " | Ocupado: " + memoria.getEspacioOcupado()
+        );
+        resumen.setStyle("-fx-font-size: 12px; -fx-text-fill: #7A7A7A; -fx-font-weight: bold;");
+        panelMemoria.getChildren().add(resumen);
+
+        BigInteger total = memoria.getTamanioTotal();
+        double anchoBase = 720.0;
+
+        for (BloqueMemoria bloque : memoria.getBloquesOcupados()) {
+            double proporcion = total.signum() == 0
+                ? 0.0
+                : bloque.getTamanio().doubleValue() / total.doubleValue();
+            double ancho = Math.max(40.0, anchoBase * proporcion);
+
+            Label l = new Label("Proceso " + bloque.getNombreProceso() +
+                " | tam=" + bloque.getTamanio() +
+                " | dir=" + bloque.getDireccionInicio() + "-" + bloque.getDireccionFin());
+            l.setMinHeight(28);
+            l.setPrefHeight(28);
+            l.setPrefWidth(ancho);
+            l.setStyle("-fx-background-color: #7B9EA6; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 4 8 4 8;");
+            panelMemoria.getChildren().add(l);
+        }
+
+        for (HuecoMemoria hueco : memoria.getHuecos()) {
+            double proporcion = total.signum() == 0
+                ? 0.0
+                : hueco.getTamanio().doubleValue() / total.doubleValue();
+            double ancho = Math.max(40.0, anchoBase * proporcion);
+
+            Label l = new Label("Hueco | tam=" + hueco.getTamanio() +
+                " | dir=" + hueco.getDireccionInicio() + "-" + hueco.getDireccionFin());
+            l.setMinHeight(24);
+            l.setPrefHeight(24);
+            l.setPrefWidth(ancho);
+            l.setStyle("-fx-background-color: #A8C5A0; -fx-text-fill: #2E4A2A; -fx-font-size: 11px; -fx-padding: 3 8 3 8;");
+            panelMemoria.getChildren().add(l);
+        }
+
+        if (memoria.getBloquesOcupados().isEmpty() && memoria.getHuecos().isEmpty()) {
+            panelMemoria.getChildren().add(new Label("Sin bloques para mostrar."));
         }
     }
 
-    @Override public void limpiarFormularioCarga()             { if (formularioModal != null) formularioModal.limpiar(); }
-    @Override public void setBtnIniciarHabilitado(boolean h)   { btnIniciar.setDisable(!h); }
-    @Override public void actualizarEstadoSimulacion(String e) { lblEstadoSim.setText(e); }
+    @Override
+    public void setBtnIniciarHabilitado(boolean habilitado) {
+        btnIniciar.setDisable(!habilitado);
+    }
+
+    @Override
+    public void actualizarEstadoSimulacion(String estado) {
+        lblEstadoSim.setText(estado);
+    }
 
     @Override
     public void mostrarHistorial(String estado, List<RegistroSimulacion.SnapshotProceso> datos) {
@@ -682,28 +583,40 @@ public class MainView implements IView {
             || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
     }
 
-    @Override public String   getNombreProceso()           { return formularioModal != null ? formularioModal.getNombre()         : ""; }
-    @Override public String   getTiempoProceso()           { return formularioModal != null ? formularioModal.getTiempo()         : ""; }
-    @Override public String   getTamanioMemoria()          { return formularioModal != null ? formularioModal.getTamanioMemoria() : ""; }
-    @Override public boolean  isPasaPorBloqueado()         { return formularioModal != null && formularioModal.isPasaPorBloqueado(); }
+    @Override
+    public String getNombreProceso() {
+        return formularioModal != null ? formularioModal.getNombre() : "";
+    }
+
+    @Override
+    public String getTiempoProceso() {
+        return formularioModal != null ? formularioModal.getTiempo() : "";
+    }
+
+    @Override
+    public String getTamanioMemoria() {
+        return formularioModal != null ? formularioModal.getTamanioMemoria() : "";
+    }
+
+    @Override
+    public boolean isPasaPorBloqueado() {
+        return formularioModal != null && formularioModal.isPasaPorBloqueado();
+    }
+
+    @Override
+    public void limpiarFormularioCarga() {
+        if (formularioModal != null) formularioModal.limpiar();
+    }
 
     @Override
     public void cerrarModalFormulario() {
         if (formularioModal != null) formularioModal.cerrar();
     }
 
-    // ══════════════════ UTILIDADES INTERNAS ══════════════════════════════════
-
     private void asegurarFormularioModal() {
         if (formularioModal != null) return;
         formularioModal = new FormProcces(stage);
         formularioModal.setOnCargar(this::notificarCargarProceso);
-    }
-
-    private void asegurarFormularioParticion() {
-        if (formularioParticion != null) return;
-        formularioParticion = new FormParticion(stage);
-        formularioParticion.setOnGuardar(this::notificarAgregarParticion);
     }
 
     private void abrirFormularioSeguro() {
@@ -716,20 +629,6 @@ public class MainView implements IView {
             formularioModal.mostrar();
         } catch (Exception ex) {
             mostrarError("No fue posible abrir el formulario de creacion.");
-        }
-    }
-
-    private void abrirFormularioParticionSeguro() {
-        try {
-            asegurarFormularioParticion();
-            if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
-                p.onEditarParticion(null);
-                formularioParticion.setParticionesCreadas(p.getParticionesMemoria());
-            }
-            formularioParticion.setModoEdicion(false);
-            formularioParticion.mostrar();
-        } catch (Exception ex) {
-            mostrarError("No fue posible abrir el formulario de particiones.");
         }
     }
 
@@ -833,13 +732,14 @@ public class MainView implements IView {
         if (css != null) sceneH.getStylesheets().add(css.toExternalForm());
 
         stageHistoriales.setScene(sceneH);
-
         stageHistoriales.setOnShown(e -> {
-            stageHistoriales.setX(stage.getX() + (stage.getWidth()  - sceneH.getWidth())  / 2);
+            stageHistoriales.setX(stage.getX() + (stage.getWidth() - sceneH.getWidth()) / 2);
             stageHistoriales.setY(stage.getY() + (stage.getHeight() - sceneH.getHeight()) / 2);
         });
         stageHistoriales.show();
     }
 
-    public Stage getStage() { return stage; }
+    public Stage getStage() {
+        return stage;
+    }
 }

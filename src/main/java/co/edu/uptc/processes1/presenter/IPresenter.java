@@ -1,7 +1,7 @@
 package co.edu.uptc.processes1.presenter;
 
 import co.edu.uptc.processes1.model.Proceso;
-import co.edu.uptc.processes1.model.Particion;
+import co.edu.uptc.processes1.model.MemoriaVariable;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -25,16 +25,14 @@ public interface IPresenter {
         boolean pasaPorBloqueado
     );
 
-    void agregarParticion(String nombre, BigInteger tamano);
-
     /** Inicia el calculo completo de la simulacion en bucle cerrado. */
     RegistroSimulacion iniciarSimulacion();
 
     /** Devuelve una vista de solo lectura de procesos cargados. */
     List<Proceso> getProcesosCargados();
 
-    /** Devuelve las particiones de memoria disponibles. */
-    List<Particion> getParticionesMemoria();
+    /** Devuelve el estado de la memoria variable. */
+    MemoriaVariable getMemoriaVariable();
 
     /** Devuelve el uso acumulado de particiones de la ultima simulacion. */
     List<RegistroSimulacion.UsoParticion> getUsoParticiones();
@@ -56,9 +54,4 @@ public interface IPresenter {
      */
     void onEliminarProceso(co.edu.uptc.processes1.model.Proceso proceso);
     
-    /** El usuario presionó "Eliminar" en la tabla de particiones. */
-    void onEliminarParticion(Particion particion);
-
-    /** El usuario seleccionó una partición para editar. */
-    void onEditarParticion(Particion particion);
 }

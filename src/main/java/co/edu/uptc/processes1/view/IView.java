@@ -1,7 +1,7 @@
 package co.edu.uptc.processes1.view;
 
 import co.edu.uptc.processes1.model.Proceso;
-import co.edu.uptc.processes1.model.Particion;
+import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.presenter.RegistroSimulacion;
 import java.util.List;
 
@@ -27,9 +27,7 @@ public interface IView {
     void actualizarTablaCargados(List<Proceso> procesos);
     void limpiarFormularioCarga();
 
-    // ── Tabla de Particiones ──────────────────────────────────────────────────
-
-    void actualizarTablaParticiones(List<Particion> particiones);
+    void actualizarEstadoMemoria(MemoriaVariable memoria);
 
     // ── Simulación ────────────────────────────────────────────────────────────
 
