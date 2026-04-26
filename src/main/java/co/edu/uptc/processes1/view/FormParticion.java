@@ -75,7 +75,7 @@ public class FormParticion {
         grid.setVgap(12);
 
         Label lblNombre = etiqueta("Nombre de la Partición:");
-        Label lblTamano = etiqueta("Tamaño (u):");
+        Label lblTamano = etiqueta("Tamaño:");
 
         grid.add(lblNombre, 0, 0);
         grid.add(txtNombre, 1, 0);
@@ -254,7 +254,7 @@ public class FormParticion {
                 if (particion == null) {
                     continue;
                 }
-                items.add(particion.getNombre() + " | " + particion.getTamanoTotal() + " u");
+                items.add(particion.getNombre() + " | " + particion.getTamanoTotal() + "");
             }
         }
         listaParticionesCreadas.setItems(FXCollections.observableArrayList(items));

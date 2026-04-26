@@ -199,7 +199,6 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        // Si el tamaño desborda long, se satura en Long.MAX_VALUE.
         long tamanioMemoria = tamanioMemoriaBig.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
             ? Long.MAX_VALUE
             : tamanioMemoriaBig.longValue();

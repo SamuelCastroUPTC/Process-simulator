@@ -611,7 +611,7 @@ public class MainView implements IView {
             try {
                 tamanoParticion = Long.parseLong(textoTamano);
             } catch (NumberFormatException ex) {
-                tamanoParticion = Long.MAX_VALUE;
+                return;
             }
 
             p.agregarParticion(
