@@ -24,6 +24,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -230,10 +231,10 @@ public class FormParticion {
         return txtTamano.getText().replaceAll("\\.", "").trim();
     }
 
-    public void precargarDatos(String nombre, long tamano) {
+    public void precargarDatos(String nombre, BigInteger tamano) {
         mantenerDatosPrecargados = true;
         txtNombre.setText(nombre == null ? "" : nombre);
-        txtTamano.setText(tamano > 0 ? String.valueOf(tamano) : "");
+        txtTamano.setText(tamano != null && tamano.compareTo(BigInteger.ZERO) > 0 ? tamano.toString() : "");
         txtNombre.requestFocus();
     }
 

@@ -2,19 +2,21 @@ package co.edu.uptc.processes1.model;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.LongProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+
+import java.math.BigInteger;
 
 public class Proceso {
 
     private final IntegerProperty id;
     private final StringProperty nombre;
-    private final LongProperty tiempoRestante;
-    private final LongProperty tamanioMemoria;
+    private final ObjectProperty<BigInteger> tiempoRestante;
+    private final ObjectProperty<BigInteger> tamanioMemoria;
     private final BooleanProperty pasaPorBloqueado;
     private final StringProperty estadoActual;
     private final BooleanProperty excedeTamanoParticion;
@@ -23,32 +25,34 @@ public class Proceso {
     public Proceso(
         int id,
         String nombre,
-        long tiempoRestante,
-        long tamanioMemoria,
+        BigInteger tiempoRestante,
+        BigInteger tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         this.id = new SimpleIntegerProperty(id);
         this.nombre = new SimpleStringProperty(nombre);
-        this.tiempoRestante = new SimpleLongProperty(tiempoRestante);
-        this.tamanioMemoria = new SimpleLongProperty(tamanioMemoria);
+        this.tiempoRestante = new SimpleObjectProperty<>(BigInteger.ZERO);
+        this.tamanioMemoria = new SimpleObjectProperty<>(BigInteger.ZERO);
+        this.tiempoRestante.set(tiempoRestante);
+        this.tamanioMemoria.set(tamanioMemoria);
         this.pasaPorBloqueado = new SimpleBooleanProperty(pasaPorBloqueado);
         this.estadoActual = new SimpleStringProperty("Listo");
         this.excedeTamanoParticion = new SimpleBooleanProperty(false);
         this.particion = null;
     }
 
-    public Proceso(int id, String nombre, long tiempoRestante, long tamanioMemoria) {
+    public Proceso(int id, String nombre, BigInteger tiempoRestante, BigInteger tamanioMemoria) {
         this(id, nombre, tiempoRestante, tamanioMemoria, false);
     }
 
-    public Proceso(String nombre, long tiempoRestante, long tamanioMemoria) {
+    public Proceso(String nombre, BigInteger tiempoRestante, BigInteger tamanioMemoria) {
         this(0, nombre, tiempoRestante, tamanioMemoria);
     }
 
     public Proceso(
         String nombre,
-        long tiempoRestante,
-        long tamanioMemoria,
+        BigInteger tiempoRestante,
+        BigInteger tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         this(0, nombre, tiempoRestante, tamanioMemoria, pasaPorBloqueado);
@@ -62,15 +66,15 @@ public class Proceso {
         return nombre.get();
     }
 
-    public long getTiempoRestante() {
+    public BigInteger getTiempoRestante() {
         return tiempoRestante.get();
     }
 
-    public long getTiempo() {
+    public BigInteger getTiempo() {
         return getTiempoRestante();
     }
 
-    public long getTamanioMemoria() {
+    public BigInteger getTamanioMemoria() {
         return tamanioMemoria.get();
     }
 
@@ -86,11 +90,11 @@ public class Proceso {
         return particion;
     }
 
-    public void setTiempoRestante(long tiempoRestante) {
+    public void setTiempoRestante(BigInteger tiempoRestante) {
         this.tiempoRestante.set(tiempoRestante);
     }
 
-    public void setTiempo(long tiempo) {
+    public void setTiempo(BigInteger tiempo) {
         setTiempoRestante(tiempo);
     }
 
@@ -98,7 +102,7 @@ public class Proceso {
         this.estadoActual.set(estadoActual);
     }
 
-    public void setTamanioMemoria(long tamanioMemoria) {
+    public void setTamanioMemoria(BigInteger tamanioMemoria) {
         this.tamanioMemoria.set(tamanioMemoria);
     }
 
@@ -126,15 +130,15 @@ public class Proceso {
         return nombre;
     }
 
-    public LongProperty tiempoRestanteProperty() {
+    public ObjectProperty<BigInteger> tiempoRestanteProperty() {
         return tiempoRestante;
     }
 
-    public LongProperty tiempoProperty() {
+    public ObjectProperty<BigInteger> tiempoProperty() {
         return tiempoRestante;
     }
 
-    public LongProperty tamanioMemoriaProperty() {
+    public ObjectProperty<BigInteger> tamanioMemoriaProperty() {
         return tamanioMemoria;
     }
 
@@ -162,6 +166,6 @@ public class Proceso {
 
     @Override
     public String toString() {
-        return getNombre() + " (" + (getTiempoRestante() / 1000L) + ")";
+        return getNombre() + " (" + getTiempoRestante().divide(BigInteger.valueOf(1000L)) + ")";
     }
 }

@@ -3,6 +3,7 @@ package co.edu.uptc.processes1.presenter;
 import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,16 +15,16 @@ import java.util.List;
  */
 public class MotorSimulacion {
 
-    private static final long QUANTUM = 5000L;
+    private static final BigInteger QUANTUM = BigInteger.valueOf(5000L);
 
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales, List<Particion> particiones) {
         int[] ultimaParticion = {0};
         RegistroSimulacion registro = new RegistroSimulacion();
 
         // Calcular tamaño de partición más grande
-        long particionMasGrande = particiones == null || particiones.isEmpty()
-            ? 0L
-            : particiones.stream().mapToLong(Particion::getTamanoTotal).max().orElse(0L);
+        BigInteger particionMasGrande = particiones == null || particiones.isEmpty()
+            ? BigInteger.ZERO
+            : particiones.stream().map(Particion::getTamanoTotal).max(BigInteger::compareTo).orElse(BigInteger.ZERO);
 
         // === INICIALIZACIÓN ===
         // 1. Ordenar procesos por tiempo de ejecución ascendente
@@ -36,7 +37,7 @@ public class MotorSimulacion {
 
         // 2. Marcar como NO_EJECUTADO los que superan partición más grande
         for (ProcesoRuntime runtime : procesosOrdenados) {
-            if (runtime.tamanioMemoria > particionMasGrande) {
+            if (runtime.tamanioMemoria.compareTo(particionMasGrande) > 0) {
                 registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, runtime);
             } else {
                 colaListos.add(runtime);
@@ -76,8 +77,8 @@ public class MotorSimulacion {
                     registrarEstado(registro, RegistroSimulacion.DESPACHAR, actual);
 
                     // b. Calcular ráfaga = min(QUANTUM, tiempoRestante)
-                    long rafaga = Math.min(QUANTUM, actual.tiempoRestante);
-                    long tiempoTrasRafaga = Math.max(0L, actual.tiempoRestante - rafaga);
+                    BigInteger rafaga = QUANTUM.min(actual.tiempoRestante);
+                    BigInteger tiempoTrasRafaga = actual.tiempoRestante.subtract(rafaga).max(BigInteger.ZERO);
 
                     // c. Registrar snapshot PROCESADOR con tiempoRestante - rafaga como tiempo snapshot
                     registrarEstado(registro, RegistroSimulacion.PROCESADOR, actual, tiempoTrasRafaga);
@@ -94,8 +95,8 @@ public class MotorSimulacion {
                     actual.tiempoRestante = tiempoTrasRafaga;
 
                     // f. Si tiempoRestante <= 0: registrar FINALIZADO y no reencolar
-                    if (actual.tiempoRestante <= 0L) {
-                        registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, 0L);
+                    if (actual.tiempoRestante.compareTo(BigInteger.ZERO) <= 0) {
+                        registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, BigInteger.ZERO);
                         termino = true;
                     } else if (actual.pasaPorBloqueado) {
                         // g. Si tiempoRestante > 0 y pasaPorBloqueado: registrar BLOQUEAR, BLOQUEADO, DESPERTAR
@@ -139,7 +140,7 @@ public class MotorSimulacion {
         return registro;
     }
 
-    private Particion buscarParticionNextFit(List<Particion> particiones, long tamanio, int[] ultimaUsada) {
+    private Particion buscarParticionNextFit(List<Particion> particiones, BigInteger tamanio, int[] ultimaUsada) {
         if (particiones == null || particiones.isEmpty()) {
             return null;
         }
@@ -166,7 +167,7 @@ public class MotorSimulacion {
         registrarEstado(registro, estado, runtime, runtime.tiempoRestante);
     }
 
-    private void registrarEstado(RegistroSimulacion registro, String estado, ProcesoRuntime runtime, long tiempoSnapshot) {
+    private void registrarEstado(RegistroSimulacion registro, String estado, ProcesoRuntime runtime, BigInteger tiempoSnapshot) {
         Proceso snapshot = new Proceso(
             runtime.id,
             runtime.nombre,
@@ -183,16 +184,16 @@ public class MotorSimulacion {
     private static final class ProcesoRuntime {
         private final int id;
         private final String nombre;
-        private final long tamanioMemoria;
+        private final BigInteger tamanioMemoria;
         private final boolean pasaPorBloqueado;
         private Particion particion;
-        private long tiempoRestante;
+        private BigInteger tiempoRestante;
 
         private ProcesoRuntime(
             int id,
             String nombre,
-            long tiempoRestante,
-            long tamanioMemoria,
+            BigInteger tiempoRestante,
+            BigInteger tamanioMemoria,
             boolean pasaPorBloqueado,
             Particion particion
         ) {

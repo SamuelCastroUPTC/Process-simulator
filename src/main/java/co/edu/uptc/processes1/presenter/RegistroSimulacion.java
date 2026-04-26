@@ -2,6 +2,7 @@ package co.edu.uptc.processes1.presenter;
 
 import co.edu.uptc.processes1.model.Proceso;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -21,14 +22,14 @@ public class RegistroSimulacion {
         String nombreProceso,
         String nombreParticion,
         long veces,
-        long tiempoCpu
+        BigInteger tiempoCpu
     ) {}
 
     public record SnapshotProceso(
         int id,
         String nombre,
-        long tiempoRestante,
-        long tamanioMemoria,
+        BigInteger tiempoRestante,
+        BigInteger tamanioMemoria,
         boolean pasaPorBloqueado,
         String estadoActual,
         String nombreParticion
@@ -92,7 +93,7 @@ public class RegistroSimulacion {
         historialTexto.computeIfAbsent(estado, key -> new ArrayList<>()).add(mensaje);
     }
 
-    public void registrarUsoParticion(int idProceso, String nombreProceso, String nombreParticion, long tiempoCpu) {
+    public void registrarUsoParticion(int idProceso, String nombreProceso, String nombreParticion, BigInteger tiempoCpu) {
         if (nombreParticion == null || nombreParticion.isBlank()) {
             return;
         }

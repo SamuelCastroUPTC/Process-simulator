@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -291,22 +292,28 @@ public class MainView implements IView {
         colNombre.setMinWidth(120);
         colNombre.setMaxWidth(Double.MAX_VALUE);   // absorbe el espacio sobrante
 
-        TableColumn<Proceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
+        TableColumn<Proceso, BigInteger> colTiempo = new TableColumn<>("Tiempo (s)");
         colTiempo.setCellValueFactory(new PropertyValueFactory<>("tiempo"));
         colTiempo.setPrefWidth(100);
         colTiempo.setMinWidth(100);
         colTiempo.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(Long item, boolean empty) {
+            @Override protected void updateItem(BigInteger item, boolean empty) {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null
-                    : String.valueOf(item / 1000L));
+                    : item.divide(BigInteger.valueOf(1000L)).toString());
             }
         });
 
-        TableColumn<Proceso, Long> colMemoria = new TableColumn<>("Memoria");
+        TableColumn<Proceso, BigInteger> colMemoria = new TableColumn<>("Memoria");
         colMemoria.setCellValueFactory(new PropertyValueFactory<>("tamanioMemoria"));
         colMemoria.setPrefWidth(110);
         colMemoria.setMinWidth(110);
+        colMemoria.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(BigInteger item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : item.toString());
+            }
+        });
 
         TableColumn<Proceso, Boolean> colBloq = boolCol("Bloqueable", "pasaPorBloqueado", 110);
 
@@ -343,23 +350,23 @@ public class MainView implements IView {
         colNombre.setMaxWidth(Double.MAX_VALUE);
 
         // Espacio Total
-        TableColumn<Particion, Long> colTotal = new TableColumn<>("Espacio Total");
+        TableColumn<Particion, BigInteger> colTotal = new TableColumn<>("Espacio Total");
         colTotal.setCellValueFactory(new PropertyValueFactory<>("tamanoTotal"));
         colTotal.setPrefWidth(160);
         colTotal.setMinWidth(140);
 
         // Espacio Disponible — resaltado en verde/rojo segun ocupacion
-        TableColumn<Particion, Long> colDisponible = new TableColumn<>("Espacio Disponible");
+        TableColumn<Particion, BigInteger> colDisponible = new TableColumn<>("Espacio Disponible");
         colDisponible.setCellValueFactory(new PropertyValueFactory<>("espacioDisponible"));
         colDisponible.setPrefWidth(175);
         colDisponible.setMinWidth(155);
         colDisponible.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(Long item, boolean empty) {
+            @Override protected void updateItem(BigInteger item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); setStyle(""); return; }
-                setText(String.valueOf(item));
+                setText(item.toString());
                 // Verde si hay espacio, coral si esta llena
-                setStyle(item > 0
+                setStyle(item.compareTo(BigInteger.ZERO) > 0
                     ? "-fx-text-fill: #5A8550; -fx-font-weight: bold;"
                     : "-fx-text-fill: #C0504D; -fx-font-weight: bold;"
                 );
@@ -602,15 +609,19 @@ public class MainView implements IView {
     private void notificarAgregarParticion() {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
                 && formularioParticion != null) {
-            long tamanoParticion;
             String textoTamano = formularioParticion.getTamano();
             if (textoTamano == null || textoTamano.isBlank() || !textoTamano.matches("\\d+")) {
                 mostrarError("El tamano de la particion debe ser un numero entero valido.");
                 return;
             }
+            BigInteger tamanoParticion;
             try {
-                tamanoParticion = Long.parseLong(textoTamano);
+                tamanoParticion = new BigInteger(textoTamano);
             } catch (NumberFormatException ex) {
+                return;
+            }
+            if (tamanoParticion.compareTo(BigInteger.ZERO) <= 0) {
+                mostrarError("El tamano de la particion debe ser mayor a 0.");
                 return;
             }
 

@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -317,7 +318,7 @@ public class FormProcces {
                 if (proceso == null) {
                     continue;
                 }
-                long tiempoSegundos = proceso.getTiempoRestante() / 1000L;
+                BigInteger tiempoSegundos = proceso.getTiempoRestante().divide(BigInteger.valueOf(1000L));
                 items.add(proceso.getNombre() + " | " + tiempoSegundos + " s | " + proceso.getTamanioMemoria() + "");
             }
         }

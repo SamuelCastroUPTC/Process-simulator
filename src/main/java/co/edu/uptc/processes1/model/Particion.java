@@ -3,16 +3,17 @@ package co.edu.uptc.processes1.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.math.BigInteger;
 
 public class Particion {
 
     private final int id;
     private String nombre;
-    private long tamanoTotal;
+    private BigInteger tamanoTotal;
     private final List<Proceso> procesosAlojados;
     private boolean ocupada = false;
 
-    public Particion(int id, String nombre, long tamanoTotal) {
+    public Particion(int id, String nombre, BigInteger tamanoTotal) {
         this.id = id;
         this.nombre = nombre;
         this.tamanoTotal = tamanoTotal;
@@ -31,20 +32,20 @@ public class Particion {
         this.nombre = nombre;
     }
 
-    public long getTamanoTotal() {
+    public BigInteger getTamanoTotal() {
         return tamanoTotal;
     }
 
-    public void setTamanoTotal(long tamanoTotal) {
+    public void setTamanoTotal(BigInteger tamanoTotal) {
         this.tamanoTotal = tamanoTotal;
     }
 
-    public long getEspacioDisponible() {
-        return ocupada ? 0 : tamanoTotal;
+    public BigInteger getEspacioDisponible() {
+        return ocupada ? BigInteger.ZERO : tamanoTotal;
     }
 
-    public boolean estaDisponible(long tamanioRequerido) {
-        return !ocupada && tamanioRequerido <= tamanoTotal;
+    public boolean estaDisponible(BigInteger tamanioRequerido) {
+        return !ocupada && tamanioRequerido.compareTo(tamanoTotal) <= 0;
     }
 
     public void ocupar() {
@@ -67,7 +68,7 @@ public class Particion {
         if (proceso == null) {
             return;
         }
-        if (proceso.getTamanioMemoria() > tamanoTotal) {
+        if (proceso.getTamanioMemoria().compareTo(tamanoTotal) > 0) {
             return;
         }
         procesosAlojados.add(proceso);

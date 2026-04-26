@@ -58,7 +58,11 @@ public class SimuladorPresenter implements IPresenter {
         int idSecuencial = 1;
         for (Integer tamano : tamaniosParticiones) {
             if (tamano != null && tamano > 0) {
-                this.particionesMemoria.add(new Particion(idSecuencial, "Partición " + idSecuencial, tamano));
+                this.particionesMemoria.add(new Particion(
+                    idSecuencial,
+                    "Partición " + idSecuencial,
+                    BigInteger.valueOf(tamano)
+                ));
                 idSecuencial++;
             }
         }
@@ -68,8 +72,8 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void agregarProceso(
         String nombre,
-        long tiempo,
-        long tamanioMemoria,
+        BigInteger tiempo,
+        BigInteger tamanioMemoria,
         boolean pasaPorBloqueado
     ) {
         if (existeNombre(nombre)) {
@@ -94,12 +98,12 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
-    public void agregarParticion(String nombre, long tamano) {
+    public void agregarParticion(String nombre, BigInteger tamano) {
         if (nombre == null || nombre.isBlank()) {
             view.mostrarError("El nombre de la partición es obligatorio.");
             return;
         }
-        if (tamano <= 0) {
+        if (tamano.compareTo(BigInteger.ZERO) <= 0) {
             view.mostrarError("El tamaño de la partición debe ser mayor a 0.");
             return;
         }
@@ -139,7 +143,7 @@ public class SimuladorPresenter implements IPresenter {
         view.actualizarEstadoSimulacion("Simulacion en progreso...");
 
         List<Proceso> procesosOrdenados = procesosCargados.stream()
-            .sorted(Comparator.comparingLong(Proceso::getTiempoRestante))
+            .sorted(Comparator.comparing(Proceso::getTiempoRestante))
             .collect(Collectors.toList());
 
         ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados, particionesMemoria);
@@ -182,11 +186,7 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        // Si el tiempo en milisegundos desborda long, se satura en Long.MAX_VALUE.
-        BigInteger tiempoMs = tiempoSegundos.multiply(BigInteger.valueOf(1000L));
-        long tiempo = tiempoMs.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
-            ? Long.MAX_VALUE
-            : tiempoMs.longValue();
+        BigInteger tiempo = tiempoSegundos.multiply(BigInteger.valueOf(1000L));
 
         if (!tamanioMemoriaStr.matches("\\d+")) {
             view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
@@ -199,14 +199,10 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        long tamanioMemoria = tamanioMemoriaBig.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
-            ? Long.MAX_VALUE
-            : tamanioMemoriaBig.longValue();
-
         agregarProceso(
             nombre,
             tiempo,
-            tamanioMemoria,
+            tamanioMemoriaBig,
             pasaPorBloqueado
         );
     }

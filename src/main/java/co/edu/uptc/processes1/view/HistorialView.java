@@ -4,7 +4,6 @@ import co.edu.uptc.processes1.presenter.RegistroSimulacion;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -14,6 +13,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -202,15 +202,15 @@ public class HistorialView {
         boolean esFinalizado = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
             || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
         if (!esFinalizado) {
-            TableColumn<RegistroSimulacion.SnapshotProceso, Long> colTiempo = new TableColumn<>("Tiempo (s)");
-            colTiempo.setCellValueFactory(cell -> new SimpleLongProperty(cell.getValue().tiempoRestante()).asObject());
+            TableColumn<RegistroSimulacion.SnapshotProceso, BigInteger> colTiempo = new TableColumn<>("Tiempo (s)");
+            colTiempo.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().tiempoRestante()));
             colTiempo.setPrefWidth(140);
             colTiempo.setCellFactory(col -> new TableCell<>() {
                 @Override
-                protected void updateItem(Long item, boolean empty) {
+                protected void updateItem(BigInteger item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty || item == null) { setText(null); return; }
-                    setText(String.valueOf(item / 1000L));
+                    setText(item.divide(BigInteger.valueOf(1000L)).toString());
                 }
             });
             tv.getColumns().add(colTiempo);
@@ -331,8 +331,13 @@ public class HistorialView {
         Label lblTituloParticion = new Label("Partición: " + nombreParticion);
         lblTituloParticion.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #3D3D3D;");
 
-        long tiempoTotal = usos.stream().mapToLong(RegistroSimulacion.UsoParticion::tiempoCpu).sum();
-        Label lblTotal = new Label("Tiempo total de ejecución: " + (tiempoTotal / 1000L) + " s");
+        BigInteger tiempoTotal = BigInteger.ZERO;
+        for (RegistroSimulacion.UsoParticion uso : usos) {
+            if (uso != null && uso.tiempoCpu() != null) {
+                tiempoTotal = tiempoTotal.add(uso.tiempoCpu());
+            }
+        }
+        Label lblTotal = new Label("Tiempo total de ejecución: " + tiempoTotal.divide(BigInteger.valueOf(1000L)) + " s");
         lblTotal.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #7B9EA6;");
 
         List<String> pasosExpandidos = new ArrayList<>();

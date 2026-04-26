@@ -3,6 +3,7 @@ package co.edu.uptc.processes1.presenter;
 import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.model.Particion;
 
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -19,12 +20,12 @@ public interface IPresenter {
      */
     void agregarProceso(
         String nombre,
-        long tiempo,
-        long tamanioMemoria,
+        BigInteger tiempo,
+        BigInteger tamanioMemoria,
         boolean pasaPorBloqueado
     );
 
-    void agregarParticion(String nombre, long tamano);
+    void agregarParticion(String nombre, BigInteger tamano);
 
     /** Inicia el calculo completo de la simulacion en bucle cerrado. */
     RegistroSimulacion iniciarSimulacion();
