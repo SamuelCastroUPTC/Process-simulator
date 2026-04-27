@@ -2,7 +2,9 @@ package co.edu.uptc.processes1.presenter;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Particion;
@@ -13,7 +15,7 @@ import co.edu.uptc.processes1.model.Proceso;
  */
 public class MotorSimulacion {
 
-    private static final BigInteger QUANTUM = BigInteger.valueOf(5000L);
+    private static final BigInteger QUANTUM = BigInteger.valueOf(1000L);
 
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales, MemoriaVariable memoria) {
         RegistroSimulacion registro = new RegistroSimulacion();
@@ -24,6 +26,11 @@ public class MotorSimulacion {
             .map(ProcesoRuntime::desde)
             .sorted((a, b) -> a.tiempoRestante.compareTo(b.tiempoRestante))
             .toList();
+
+        int maxIteraciones = procesosOrdenados.size() * 1000;
+        int iteracionesGlobales = 0;
+        int contadorParticion = 1;
+        Map<Integer, String> nombreParticionPorProceso = new HashMap<>();
 
         List<ProcesoRuntime> colaListos = new ArrayList<>();
 
@@ -43,7 +50,20 @@ public class MotorSimulacion {
         }
 
         while (!colaListos.isEmpty()) {
+            boolean limiteSuperado = false;
             for (int i = 0; i < colaListos.size(); ) {
+                iteracionesGlobales++;
+                if (iteracionesGlobales > maxIteraciones) {
+                    for (ProcesoRuntime restante : new ArrayList<>(colaListos)) {
+                        registrarEstadoNoEjecutado(registro,
+                            "La simulación superó el límite de iteraciones seguras",
+                            restante);
+                    }
+                    colaListos.clear();
+                    limiteSuperado = true;
+                    break;
+                }
+
                 ProcesoRuntime actual = colaListos.get(i);
 
                 BigInteger direccionInicio = memoria.asignar(actual.id, actual.nombre, actual.tamanioMemoria);
@@ -53,13 +73,21 @@ public class MotorSimulacion {
                     continue;
                 }
 
+                if (!nombreParticionPorProceso.containsKey(actual.id)) {
+                    nombreParticionPorProceso.put(actual.id, "PAR" + contadorParticion++);
+                }
+                actual.referenciaMemoria = nombreParticionPorProceso.get(actual.id);
+
+                List<String> huecosAntesLiberar = memoria.getHuecos().stream()
+                    .map(h -> h.toString())
+                    .toList();
+
                 // ── NUEVO: registrar asignación ──────────────────────────────────────────
                 registrarEventoMemoria(registro, RegistroSimulacion.ASIGNACION,
                     actual.nombre, direccionInicio, actual.tamanioMemoria,
                     "Proceso '" + actual.nombre + "' asignado en dir=" + direccionInicio
                     + ", tamaño=" + actual.tamanioMemoria, memoria);
 
-                actual.referenciaMemoria = direccionInicio.toString();
                 boolean termino = false;
 
                 try {
@@ -96,6 +124,14 @@ public class MotorSimulacion {
                         "Proceso '" + actual.nombre + "' liberó memoria (" + motivoLib + ")", memoria);
 
                     if (huboCondensacion) {
+                        String particionResultante = "PAR" + contadorParticion++;
+                        String condensadas = String.join("+", huecosAntesLiberar);
+                        BigInteger tamanioResultante = memoria.getEspacioLibreTotal();
+                        registro.registrarCondensacion(new RegistroSimulacion.SnapshotCondensacion(
+                            particionResultante,
+                            condensadas,
+                            tamanioResultante
+                        ));
                         registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
                             actual.nombre, null, null,
                             "Huecos fusionados tras liberar proceso '" + actual.nombre + "'", memoria);
@@ -110,6 +146,10 @@ public class MotorSimulacion {
                     registrarEstado(registro, RegistroSimulacion.LISTO, actual);
                     i++;
                 }
+            }
+
+            if (limiteSuperado) {
+                break;
             }
         }
 

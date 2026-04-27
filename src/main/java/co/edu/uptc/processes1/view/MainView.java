@@ -56,6 +56,7 @@ public class MainView implements IView {
     
     // --- CAMBIO A: Nuevo mapa de ventanas de memoria ---
     private final Map<String, HistorialMemoriaView> ventanasMemoria = new HashMap<>();
+    private HistorialCondensacionView ventanaCondensacion;
 
     private Object presenter;
 
@@ -440,9 +441,12 @@ public class MainView implements IView {
     // --- CAMBIO C: Redirigir los eventos de memoria al nuevo método del presenter ---
     private void notificarVerHistorial(String estado) {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
+            if (RegistroSimulacion.CONDENSACION.equals(estado)) {
+                p.onVerHistorialCondensacion();
+                return;
+            }
             if (RegistroSimulacion.ASIGNACION.equals(estado)
-                    || RegistroSimulacion.LIBERACION.equals(estado)
-                    || RegistroSimulacion.CONDENSACION.equals(estado)) {
+                    || RegistroSimulacion.LIBERACION.equals(estado)) {
                 p.onVerHistorialMemoria(estado);  // método nuevo en IPresenter
             } else {
                 p.onVerHistorial(estado);
@@ -454,13 +458,21 @@ public class MainView implements IView {
         if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || proceso == null) {
             return;
         }
-        boolean confirmado = ModalUtil.confirmar(stage,
-            "¿Seguro que quiere borrar el proceso " + proceso.getNombre() + "?");
-        if (confirmado) {
-            p.onEliminarProceso(proceso);
-            actualizarEstadoMemoria(p.getMemoriaVariable());
-            mostrarExito("Proceso eliminado correctamente");
+        boolean primera = ModalUtil.confirmar(stage,
+            "¿Seguro que quiere eliminar el proceso " + proceso.getNombre() + "?");
+        if (!primera) {
+            return;
         }
+
+        boolean segunda = ModalUtil.confirmar(stage,
+            "¿Realmente está seguro de eliminar el proceso " + proceso.getNombre() + "? Esta acción no se puede deshacer.");
+        if (!segunda) {
+            return;
+        }
+
+        p.onEliminarProceso(proceso);
+        actualizarEstadoMemoria(p.getMemoriaVariable());
+        mostrarExito("Proceso eliminado correctamente");
     }
 
     private void abrirFormularioEdicion(Proceso proceso) {
@@ -611,6 +623,14 @@ public class MainView implements IView {
         ventana.mostrarConDatos(datos);
     }
 
+    @Override
+    public void mostrarHistorialCondensacion(List<RegistroSimulacion.SnapshotCondensacion> datos) {
+        if (ventanaCondensacion == null) {
+            ventanaCondensacion = new HistorialCondensacionView();
+        }
+        ventanaCondensacion.mostrarConDatos(datos);
+    }
+
     private boolean esEstadoFinalizacion(String estado) {
         return RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)
             || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
@@ -623,7 +643,7 @@ public class MainView implements IView {
 
     @Override
     public String getTiempoProceso() {
-        return formularioModal != null ? formularioModal.getTiempo() : "";
+        return formularioModal != null ? formularioModal.getTiempo().replace(".", "").trim() : "";
     }
 
     @Override

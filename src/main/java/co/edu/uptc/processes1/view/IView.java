@@ -56,4 +56,6 @@ public interface IView {
     void cerrarModalFormulario();
 
     void mostrarHistorialMemoria(String evento, List<RegistroSimulacion.SnapshotMemoria> datos);
+
+    void mostrarHistorialCondensacion(List<RegistroSimulacion.SnapshotCondensacion> datos);
 }

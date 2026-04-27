@@ -49,6 +49,12 @@ public class RegistroSimulacion {
             String motivoNoEjecucion
     ) {}
 
+        public record SnapshotCondensacion(
+            String particionResultante,
+            String particionesCondensadas,
+            BigInteger tamanioResultante
+        ) {}
+
     // ==========================================
     // 2. CONSTANTES DE ESTADOS
     // ==========================================
@@ -82,6 +88,7 @@ public class RegistroSimulacion {
     private final Map<String, List<String>> historialTexto;
     private final Map<String, List<SnapshotProceso>> historialProcesos;
     private final Map<String, List<UsoParticion>> usoParticiones;
+    private final List<SnapshotCondensacion> historialCondensacion;
     
     // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
@@ -93,6 +100,7 @@ public class RegistroSimulacion {
         this.historialTexto = new LinkedHashMap<>();
         this.historialProcesos = new LinkedHashMap<>();
         this.usoParticiones = new LinkedHashMap<>();
+        this.historialCondensacion = new ArrayList<>();
         this.historialMemoria = new LinkedHashMap<>(); // Inicializamos el mapa nuevo
         
         // ¡NUEVO CICLO! Inicializamos las listas vacías para los eventos de memoria
@@ -151,6 +159,10 @@ public class RegistroSimulacion {
         historialMemoria.computeIfAbsent(evento, k -> new ArrayList<>()).add(snapshot);
     }
 
+    public void registrarCondensacion(SnapshotCondensacion snap) {
+        historialCondensacion.add(snap);
+    }
+
     // ==========================================
     // 6. GETTERS Y UTILIDADES
     // ==========================================
@@ -184,6 +196,10 @@ public class RegistroSimulacion {
             resultado.addAll(eventos);
         }
         return Collections.unmodifiableList(resultado);
+    }
+
+    public List<SnapshotCondensacion> getHistorialCondensacion() {
+        return Collections.unmodifiableList(historialCondensacion);
     }
 
     // ¡NUEVO MÉTODO! Para obtener el historial de memoria

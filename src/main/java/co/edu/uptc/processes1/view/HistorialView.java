@@ -173,8 +173,9 @@ public class HistorialView {
      * método es una fábrica: cada invocación produce una tabla independiente.
      *
      * Lógica de columnas:
-     *   - Estado "Salida" (finalizado): solo muestra "Nombre".
-     *   - Resto de estados:             muestra "Nombre" y "Tiempo (s)".
+     *   - Expiración de tiempo: muestra "Nombre", "Tiempo (s)" y "Partición".
+     *   - Salida / Finalización de particiones: muestra "Nombre", "Tamaño" y "Particiones Usadas".
+     *   - Resto de estados: muestra "Nombre" y "Tiempo (s)".
      */
     private TableView<RegistroSimulacion.SnapshotProceso> crearTablaParaEstado() {
         TableView<RegistroSimulacion.SnapshotProceso> tv = new TableView<>();
@@ -184,21 +185,43 @@ public class HistorialView {
         colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().nombre()));
         tv.getColumns().add(colNombre);
 
-        // Agregar columna "Partición" si es FINALIZACION_PARTICIONES
-        if (RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado)) {
+        if (RegistroSimulacion.EXPIRACION_TIEMPO.equalsIgnoreCase(estado)) {
+            TableColumn<RegistroSimulacion.SnapshotProceso, BigInteger> colTiempo = new TableColumn<>("Tiempo (s)");
+            colTiempo.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().tiempoRestante()));
+            colTiempo.setPrefWidth(140);
+            colTiempo.setCellFactory(col -> new TableCell<>() {
+                @Override
+                protected void updateItem(BigInteger item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) { setText(null); return; }
+                    setText(item.divide(BigInteger.valueOf(1000L)).toString());
+                }
+            });
+            tv.getColumns().add(colTiempo);
+
             TableColumn<RegistroSimulacion.SnapshotProceso, String> colParticion = new TableColumn<>("Partición");
             colParticion.setCellValueFactory(cell -> {
-                String nombreParticion = cell.getValue().nombreParticion();
-                String valor = (nombreParticion == null || nombreParticion.isBlank()) ? "Sin asignar" : nombreParticion;
-                return new SimpleStringProperty(valor);
+                String p = cell.getValue().nombreParticion();
+                return new SimpleStringProperty((p == null || p.isBlank()) ? "Sin asignar" : p);
             });
             colParticion.setPrefWidth(140);
             tv.getColumns().add(colParticion);
-        }
+        } else if (ESTADO_FINALIZADO.equalsIgnoreCase(estado)
+            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado)) {
 
-        boolean esFinalizado = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
-            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
-        if (!esFinalizado) {
+            TableColumn<RegistroSimulacion.SnapshotProceso, String> colTamanio = new TableColumn<>("Tamaño");
+            colTamanio.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().tamanioMemoria() != null ? cell.getValue().tamanioMemoria().toString() : "-"));
+            tv.getColumns().add(colTamanio);
+
+            TableColumn<RegistroSimulacion.SnapshotProceso, String> colPartUsadas = new TableColumn<>("Particiones Usadas");
+            colPartUsadas.setCellValueFactory(cell -> {
+                String p = cell.getValue().nombreParticion();
+                return new SimpleStringProperty((p == null || p.isBlank()) ? "Sin asignar" : p);
+            });
+            colPartUsadas.setPrefWidth(160);
+            tv.getColumns().add(colPartUsadas);
+        } else {
             TableColumn<RegistroSimulacion.SnapshotProceso, BigInteger> colTiempo = new TableColumn<>("Tiempo (s)");
             colTiempo.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().tiempoRestante()));
             colTiempo.setPrefWidth(140);

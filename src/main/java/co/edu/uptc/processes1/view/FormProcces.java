@@ -91,7 +91,7 @@ public class FormProcces {
 
         // ══════════════ PANEL IZQUIERDO — Datos basicos ═══════════════════════
         txtNombre         = campo(null);
-        txtTiempo         = campo("Ej: 5");     soloNumeros(txtTiempo);
+        txtTiempo         = campo("Ej: 5");     formatearConPuntosMiles(txtTiempo);
         txtTamanioMemoria = campo("Ej: 128");   formatearConPuntosMiles(txtTamanioMemoria);
 
         GridPane gridIzq = panelGrid(160);
@@ -124,8 +124,8 @@ public class FormProcces {
         );
         panelProcesos.setAlignment(Pos.TOP_LEFT);
         panelProcesos.setPadding(new Insets(0, 0, 0, 20));
-        panelProcesos.setPrefWidth(280);
-        panelProcesos.setMaxWidth(320);
+        panelProcesos.setPrefWidth(420);
+        panelProcesos.setMaxWidth(500);
         VBox.setVgrow(listaProcesosCargados, Priority.ALWAYS);
         HBox.setHgrow(panelProcesos, Priority.ALWAYS);
 
@@ -172,9 +172,9 @@ public class FormProcces {
             "-fx-background-color: #FFFFFF;" +
             "-fx-border-color: #DDD8D3; -fx-border-width: 1;"
         );
-        card.setPrefWidth(900);
-        card.setMinWidth(660);
-        card.setMaxWidth(960);
+        card.setPrefWidth(1100);
+        card.setMinWidth(860);
+        card.setMaxWidth(1200);
 
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
         StackPane overlay = new StackPane(card);

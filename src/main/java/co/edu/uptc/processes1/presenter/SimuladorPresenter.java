@@ -39,7 +39,7 @@ public class SimuladorPresenter implements IPresenter {
 );
 
     public SimuladorPresenter(IView view) {
-        this(view, BigInteger.valueOf(1024L), new MotorSimulacion());
+        this(view, BigInteger.ZERO, new MotorSimulacion());
     }
 
     public SimuladorPresenter(IView view, BigInteger tamanioTotalMemoria) {
@@ -56,7 +56,7 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void agregarProceso(String nombre, BigInteger tiempo, BigInteger tamanioMemoria) {
         if (existeNombre(nombre)) {
-            view.mostrarError("El nombre ya existe");
+            view.mostrarError("El nombre del proceso ya existe");
             return;
         }
 
@@ -68,6 +68,7 @@ public class SimuladorPresenter implements IPresenter {
         );
 
         procesosCargados.add(nuevo);
+    this.memoriaVariable = recalcularMemoria();
 
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarEstadoMemoria(memoriaVariable);
@@ -93,7 +94,7 @@ public class SimuladorPresenter implements IPresenter {
         sincronizarHistorialesConRegistro(ultimoRegistro);
 
         procesosCargados.clear();
-        memoriaVariable = new MemoriaVariable(memoriaVariable.getTamanioTotal());
+    this.memoriaVariable = recalcularMemoria();
 
         view.actualizarTablaCargados(new ArrayList<>());
         view.actualizarEstadoMemoria(memoriaVariable);
@@ -120,7 +121,7 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void onCargarProceso() {
         String nombre = view.getNombreProceso();
-        String tiempoStr = view.getTiempoProceso();
+        String tiempoStr = view.getTiempoProceso().replace(".", "").trim();
         String tamanioMemoriaStr = view.getTamanioMemoria().replace(".", "");
 
         if (nombre.isBlank() || tiempoStr.isBlank() || tamanioMemoriaStr.isBlank()) {
@@ -162,6 +163,7 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void onEliminarProceso(Proceso proceso) {
         procesosCargados.removeIf(p -> p.getId() == proceso.getId());
+        this.memoriaVariable = recalcularMemoria();
         view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
         view.actualizarEstadoMemoria(memoriaVariable);
     }
@@ -235,6 +237,15 @@ public class SimuladorPresenter implements IPresenter {
         return false;
     }
 
+    private MemoriaVariable recalcularMemoria() {
+        BigInteger tamanioTotal = procesosCargados.stream()
+            .map(Proceso::getTamanioMemoria)
+            .reduce(BigInteger.ZERO, BigInteger::add);
+
+        return new MemoriaVariable(tamanioTotal.compareTo(BigInteger.ZERO) == 0
+            ? BigInteger.ZERO : tamanioTotal);
+    }
+
     private void sincronizarHistorialesConRegistro(RegistroSimulacion registro) {
         historialesPorEstado.values().forEach(List::clear);
         for (String estado : ESTADOS) {
@@ -266,4 +277,9 @@ public void onVerHistorialMemoria(String evento) {
     List<RegistroSimulacion.SnapshotMemoria> datos = ultimoRegistro.getHistorialMemoria(evento);
     view.mostrarHistorialMemoria(evento, datos);
 }
+
+    @Override
+    public void onVerHistorialCondensacion() {
+        view.mostrarHistorialCondensacion(ultimoRegistro.getHistorialCondensacion());
+    }
 }

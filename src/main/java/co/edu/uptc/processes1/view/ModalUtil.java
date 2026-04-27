@@ -139,7 +139,7 @@ public class ModalUtil {
         lblMensaje.setMaxWidth(340);
         lblMensaje.setAlignment(Pos.CENTER);
 
-        Button btnConfirmar = new Button("Confirmar");
+        Button btnConfirmar = new Button("Sí");
         btnConfirmar.getStyleClass().add("btn-modal-ok");
         btnConfirmar.setStyle(
             "-fx-background-color: #7B9EA6; -fx-text-fill: white;" +
@@ -152,7 +152,7 @@ public class ModalUtil {
             modal.close();
         });
 
-        Button btnCancelar = new Button("Cancelar");
+        Button btnCancelar = new Button("No");
         btnCancelar.setStyle(
             "-fx-background-color: #7B9EA6; -fx-text-fill: white;" +
             "-fx-font-size: 14px; -fx-font-weight: bold;" +
