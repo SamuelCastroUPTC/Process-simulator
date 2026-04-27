@@ -233,7 +233,13 @@ public class FormProcces {
    // ── API pública ───────────────────────────────────────────────────────────
 
     public void mostrar() {
-        limpiar();
+        mostrar(true);
+    }
+
+    public void mostrar(boolean limpiarAntes) {
+        if (limpiarAntes) {
+            limpiar();
+        }
         
         // Configuramos el centrado y el foco JUSTO cuando la ventana ya sabe su tamaño real
         modalStage.setOnShown(e -> {
@@ -243,7 +249,11 @@ public class FormProcces {
                 modalStage.setX(parent.getX() + (parent.getWidth() - modalStage.getWidth()) / 2);
                 modalStage.setY(parent.getY() + (parent.getHeight() - modalStage.getHeight()) / 2);
             }
-            txtNombre.requestFocus();
+            if (txtNombre.isDisable()) {
+                txtTiempo.requestFocus();
+            } else {
+                txtNombre.requestFocus();
+            }
         });
 
         modalStage.toFront();
@@ -262,6 +272,7 @@ public class FormProcces {
         txtNombre.clear();
         txtTiempo.clear();
         txtTamanioMemoria.clear();
+        txtNombre.setDisable(false);
         // Quitamos el requestFocus() de aquí, porque lo pasamos al evento setOnShown de arriba
     }
 
@@ -275,6 +286,16 @@ public class FormProcces {
             txtTiempo.setDisable(false);
             txtTamanioMemoria.setDisable(false);
         }
+    }
+
+    public void cargarProcesoParaEdicion(Proceso proceso) {
+        if (proceso == null) {
+            return;
+        }
+        txtNombre.setText(proceso.getNombre());
+        txtTiempo.setText(proceso.getTiempoRestante().divide(BigInteger.valueOf(1000L)).toString());
+        txtTamanioMemoria.setText(proceso.getTamanioMemoria().toString());
+        txtNombre.setDisable(true);
     }
 
      // ── Getters ───────────────────────────────────────────────────────────────

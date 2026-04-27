@@ -167,6 +167,49 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
+    public boolean onEditarProceso(Proceso proceso, String tiempoSegundos, String tamanioMemoria) {
+        if (proceso == null) {
+            view.mostrarError("No se encontró el proceso a editar");
+            return false;
+        }
+
+        if (tiempoSegundos == null || tiempoSegundos.isBlank() || tamanioMemoria == null || tamanioMemoria.isBlank()) {
+            view.mostrarError("Por favor, complete todos los campos obligatorios");
+            return false;
+        }
+
+        if (!tiempoSegundos.matches("-?\\d+")) {
+            view.mostrarError("El tiempo debe ser un numero entero valido");
+            return false;
+        }
+
+        BigInteger tiempo = new BigInteger(tiempoSegundos);
+        if (tiempo.signum() <= 0) {
+            view.mostrarError("El tiempo de ejecucion debe ser mayor a 0");
+            return false;
+        }
+
+        String tamanioLimpio = tamanioMemoria.replace(".", "").trim();
+        if (!tamanioLimpio.matches("\\d+")) {
+            view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
+            return false;
+        }
+
+        BigInteger tamanio = new BigInteger(tamanioLimpio);
+        if (tamanio.signum() <= 0) {
+            view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
+            return false;
+        }
+
+        proceso.setTiempoRestante(tiempo.multiply(BigInteger.valueOf(1000L)));
+        proceso.setTamanioMemoria(tamanio);
+
+        view.actualizarTablaCargados(new ArrayList<>(procesosCargados));
+        view.actualizarEstadoMemoria(memoriaVariable);
+        return true;
+    }
+
+    @Override
     public void onVerHistorial(String estado) {
         String estadoCanonico = normalizarEstado(estado);
         List<RegistroSimulacion.SnapshotProceso> datos = historialesPorEstado.getOrDefault(estadoCanonico, List.of());

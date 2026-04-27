@@ -283,9 +283,7 @@ public class MainView implements IView {
             }
         });
 
-        TableColumn<Proceso, Void> colEditar = accionCol("Editar", "#7B9EA6", proceso ->
-            mostrarAviso("Edicion disponible en la siguiente iteracion. Proceso: " + proceso.getNombre())
-        );
+        TableColumn<Proceso, Void> colEditar = accionCol("Editar", "#7B9EA6", this::abrirFormularioEdicion);
         colEditar.setPrefWidth(90);
         colEditar.setMinWidth(90);
 
@@ -461,6 +459,47 @@ public class MainView implements IView {
         if (confirmado) {
             p.onEliminarProceso(proceso);
             actualizarEstadoMemoria(p.getMemoriaVariable());
+            mostrarExito("Proceso eliminado correctamente");
+        }
+    }
+
+    private void abrirFormularioEdicion(Proceso proceso) {
+        if (proceso == null) {
+            return;
+        }
+        try {
+            asegurarFormularioModal();
+            if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
+                formularioModal.setProcesosCargados(p.getProcesosCargados());
+            }
+            formularioModal.setModoEdicion(true);
+            formularioModal.cargarProcesoParaEdicion(proceso);
+            formularioModal.setOnCargar(() -> notificarEditarProceso(proceso));
+            formularioModal.mostrar(false);
+        } catch (Exception ex) {
+            mostrarError("No fue posible abrir el formulario de edicion.");
+        } finally {
+            if (formularioModal != null) {
+                formularioModal.setModoEdicion(false);
+                formularioModal.setOnCargar(this::notificarCargarProceso);
+            }
+        }
+    }
+
+    private void notificarEditarProceso(Proceso proceso) {
+        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || proceso == null) {
+            return;
+        }
+
+        boolean actualizado = p.onEditarProceso(
+            proceso,
+            formularioModal.getTiempo(),
+            formularioModal.getTamanioMemoria()
+        );
+
+        if (actualizado) {
+            mostrarExito("Proceso editado correctamente");
+            formularioModal.cerrar();
         }
     }
 

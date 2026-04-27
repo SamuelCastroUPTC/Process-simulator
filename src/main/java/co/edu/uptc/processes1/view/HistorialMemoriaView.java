@@ -20,8 +20,6 @@ public class HistorialMemoriaView {
     private Stage stage;
     private Label lblContador;
     private TableView<RegistroSimulacion.SnapshotMemoria> tablaEventos;
-    private ListView<String> listaHuecos;
-    private ListView<String> listaBloques;
     private final String evento;
 
     private double dragOffsetX, dragOffsetY;
@@ -97,42 +95,10 @@ public class HistorialMemoriaView {
         colDetalle.setPrefWidth(400);
 
         tablaEventos.getColumns().addAll(colProceso, colDireccion, colTamanio, colDetalle);
-
-        // Al seleccionar una fila, actualizar los paneles laterales
-        tablaEventos.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
-            if (sel != null) {
-                listaHuecos.setItems(FXCollections.observableArrayList(sel.estadoHuecos()));
-                listaBloques.setItems(FXCollections.observableArrayList(sel.estadoBloques()));
-            }
-        });
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
-        // ── Panel de estado de memoria ────────────────────────────────────────
-        Label lblHuecos = new Label("Huecos libres en ese momento:");
-        lblHuecos.setStyle("-fx-font-weight: bold; -fx-text-fill: #5A8550; -fx-font-size: 13px;");
-
-        listaHuecos = new ListView<>();
-        listaHuecos.setPlaceholder(new Label("Sin huecos."));
-        listaHuecos.setPrefHeight(160);
-        listaHuecos.setStyle("-fx-background-color: #D4EDD0; -fx-border-color: #A8C5A0;");
-
-        Label lblBloques = new Label("Bloques ocupados en ese momento:");
-        lblBloques.setStyle("-fx-font-weight: bold; -fx-text-fill: #5A7A85; -fx-font-size: 13px;");
-
-        listaBloques = new ListView<>();
-        listaBloques.setPlaceholder(new Label("Sin bloques."));
-        listaBloques.setPrefHeight(160);
-        listaBloques.setStyle("-fx-background-color: #D4EBF0; -fx-border-color: #7B9EA6;");
-
-        Label lblHint = new Label("Seleccione un evento de la tabla para ver el estado de memoria en ese instante.");
-        lblHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #AAAAAA; -fx-font-style: italic;");
-
-        VBox panelEstado = new VBox(8, lblHuecos, listaHuecos, lblBloques, listaBloques, lblHint);
-        panelEstado.setPadding(new Insets(12, 0, 0, 0));
-        panelEstado.setStyle("-fx-background-color: #F0F7F9;");
-
         // ── Layout central ────────────────────────────────────────────────────
-        VBox contenido = new VBox(12, tablaEventos, new Separator(), panelEstado);
+        VBox contenido = new VBox(12, tablaEventos);
         contenido.setPadding(new Insets(16, 36, 0, 36));
         contenido.setStyle("-fx-background-color: #F0F7F9;");
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
@@ -162,8 +128,6 @@ public class HistorialMemoriaView {
 
     public void mostrarConDatos(List<RegistroSimulacion.SnapshotMemoria> datos) {
         tablaEventos.setItems(FXCollections.observableArrayList(datos));
-        listaHuecos.setItems(FXCollections.observableArrayList());
-        listaBloques.setItems(FXCollections.observableArrayList());
         int n = datos.size();
         lblContador.setText(n + (n == 1 ? " evento" : " eventos"));
         stage.show();
