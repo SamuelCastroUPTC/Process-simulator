@@ -54,4 +54,6 @@ public interface IView {
      * El Presentador lo llama tras validar y registrar el proceso con éxito.
      */
     void cerrarModalFormulario();
+
+    void mostrarHistorialMemoria(String evento, List<RegistroSimulacion.SnapshotMemoria> datos);
 }

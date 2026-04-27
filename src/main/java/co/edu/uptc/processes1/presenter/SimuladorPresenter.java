@@ -26,14 +26,17 @@ public class SimuladorPresenter implements IPresenter {
     private RegistroSimulacion ultimoRegistro = new RegistroSimulacion();
 
     private static final List<String> ESTADOS = List.of(
-        RegistroSimulacion.INICIO,
-        RegistroSimulacion.DESPACHAR,
-        RegistroSimulacion.PROCESADOR,
-        RegistroSimulacion.EXPIRACION_TIEMPO,
-        RegistroSimulacion.NO_EJECUTADO,
-        RegistroSimulacion.FINALIZADO,
-        RegistroSimulacion.FINALIZACION_PARTICIONES
-    );
+    RegistroSimulacion.INICIO,
+    RegistroSimulacion.DESPACHAR,
+    RegistroSimulacion.PROCESADOR,
+    RegistroSimulacion.EXPIRACION_TIEMPO,
+    RegistroSimulacion.NO_EJECUTADO,
+    RegistroSimulacion.FINALIZADO,
+    RegistroSimulacion.FINALIZACION_PARTICIONES,
+    RegistroSimulacion.ASIGNACION,
+    RegistroSimulacion.LIBERACION,
+    RegistroSimulacion.CONDENSACION
+);
 
     public SimuladorPresenter(IView view) {
         this(view, BigInteger.valueOf(1024L), new MotorSimulacion());
@@ -213,4 +216,11 @@ public class SimuladorPresenter implements IPresenter {
             default -> estado;
         };
     }
+
+
+@Override
+public void onVerHistorialMemoria(String evento) {
+    List<RegistroSimulacion.SnapshotMemoria> datos = ultimoRegistro.getHistorialMemoria(evento);
+    view.mostrarHistorialMemoria(evento, datos);
+}
 }

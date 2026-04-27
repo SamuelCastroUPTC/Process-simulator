@@ -52,5 +52,7 @@ public interface IPresenter {
      * Debe quitar el proceso de la lista antes de iniciar la simulación.
      */
     void onEliminarProceso(co.edu.uptc.processes1.model.Proceso proceso);
+
+    void onVerHistorialMemoria(String evento);
     
 }

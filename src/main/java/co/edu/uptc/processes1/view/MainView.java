@@ -53,15 +53,23 @@ public class MainView implements IView {
     private Stage stageHistoriales;
 
     private final Map<String, HistorialView> ventanasHistorial = new HashMap<>();
+    
+    // --- CAMBIO A: Nuevo mapa de ventanas de memoria ---
+    private final Map<String, HistorialMemoriaView> ventanasMemoria = new HashMap<>();
+
     private Object presenter;
 
     private double dragOffsetX;
     private double dragOffsetY;
 
+    // --- CAMBIO A: Array ESTADOS_HISTORIAL actualizado con los 3 estados nuevos ---
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO, "Despachar", "Procesador",
         "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Salida",
-        RegistroSimulacion.FINALIZACION_PARTICIONES
+        RegistroSimulacion.FINALIZACION_PARTICIONES,
+        RegistroSimulacion.ASIGNACION,       // nuevo
+        RegistroSimulacion.LIBERACION,       // nuevo
+        RegistroSimulacion.CONDENSACION      // nuevo
     };
 
     public MainView(Stage stage) {
@@ -124,6 +132,7 @@ public class MainView implements IView {
         btnSalir.getStyleClass().add("btn-salir");
         btnSalir.setOnAction(e -> {
             ventanasHistorial.values().forEach(HistorialView::cerrar);
+            ventanasMemoria.values().forEach(HistorialMemoriaView::cerrar); // Opcional: para limpiar también estas ventanas
             stage.close();
         });
 
@@ -430,9 +439,16 @@ public class MainView implements IView {
         }
     }
 
+    // --- CAMBIO C: Redirigir los eventos de memoria al nuevo método del presenter ---
     private void notificarVerHistorial(String estado) {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
-            p.onVerHistorial(estado);
+            if (RegistroSimulacion.ASIGNACION.equals(estado)
+                    || RegistroSimulacion.LIBERACION.equals(estado)
+                    || RegistroSimulacion.CONDENSACION.equals(estado)) {
+                p.onVerHistorialMemoria(estado);  // método nuevo en IPresenter
+            } else {
+                p.onVerHistorial(estado);
+            }
         }
     }
 
@@ -547,6 +563,13 @@ public class MainView implements IView {
             return;
         }
         historialView.mostrarConDatos(datos);
+    }
+
+    // --- CAMBIO B: Implementación del método de IView ---
+    @Override
+    public void mostrarHistorialMemoria(String evento, List<RegistroSimulacion.SnapshotMemoria> datos) {
+        HistorialMemoriaView ventana = ventanasMemoria.computeIfAbsent(evento, HistorialMemoriaView::new);
+        ventana.mostrarConDatos(datos);
     }
 
     private boolean esEstadoFinalizacion(String estado) {

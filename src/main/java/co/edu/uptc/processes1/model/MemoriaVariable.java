@@ -37,23 +37,13 @@ public class MemoriaVariable {
         return null;
     }
 
-    public void liberar(int idProceso) {
-        BloqueMemoria bloque = null;
-        for (BloqueMemoria actual : bloquesOcupados) {
-            if (actual.getIdProceso() == idProceso) {
-                bloque = actual;
-                break;
-            }
-        }
-
-        if (bloque == null) {
-            return;
-        }
-
-        bloquesOcupados.remove(bloque);
-        huecos.add(new HuecoMemoria(bloque.getDireccionInicio(), bloque.getTamanio()));
-        condensar();
-    }
+    // En MemoriaVariable.java — cambia el tipo de retorno de void a boolean
+public boolean liberar(int idProceso) {
+    // ... código existente ...
+    int huecoAntes = huecos.size();
+    condensar();
+    return huecos.size() < huecoAntes; // true si se fusionó algo
+}
 
     private void condensar() {
         huecos.sort(Comparator.comparing(HuecoMemoria::getDireccionInicio));

@@ -1,12 +1,12 @@
 package co.edu.uptc.processes1.presenter;
 
-import co.edu.uptc.processes1.model.MemoriaVariable;
-import co.edu.uptc.processes1.model.Particion;
-import co.edu.uptc.processes1.model.Proceso;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import co.edu.uptc.processes1.model.MemoriaVariable;
+import co.edu.uptc.processes1.model.Particion;
+import co.edu.uptc.processes1.model.Proceso;
 
 /**
  * Motor de simulacion Round Robin con flujo secuencial determinista.
@@ -53,6 +53,12 @@ public class MotorSimulacion {
                     continue;
                 }
 
+                // ── NUEVO: registrar asignación ──────────────────────────────────────────
+                registrarEventoMemoria(registro, RegistroSimulacion.ASIGNACION,
+                    actual.nombre, direccionInicio, actual.tamanioMemoria,
+                    "Proceso '" + actual.nombre + "' asignado en dir=" + direccionInicio
+                    + ", tamaño=" + actual.tamanioMemoria, memoria);
+
                 actual.referenciaMemoria = direccionInicio.toString();
                 boolean termino = false;
 
@@ -81,7 +87,20 @@ public class MotorSimulacion {
                     }
 
                 } finally {
-                    memoria.liberar(actual.id);
+                    // ── NUEVO: registrar liberación y condensación ──────────────────────
+                    boolean huboCondensacion = memoria.liberar(actual.id);
+
+                    String motivoLib = termino ? "proceso terminado" : "quantum expirado";
+                    registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
+                        actual.nombre, null, actual.tamanioMemoria,
+                        "Proceso '" + actual.nombre + "' liberó memoria (" + motivoLib + ")", memoria);
+
+                    if (huboCondensacion) {
+                        registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
+                            actual.nombre, null, null,
+                            "Huecos fusionados tras liberar proceso '" + actual.nombre + "'", memoria);
+                    }
+
                     actual.referenciaMemoria = null;
                 }
 
@@ -170,5 +189,31 @@ public class MotorSimulacion {
                 p.getTamanioMemoria()
             );
         }
+    }
+
+    private void registrarEventoMemoria(
+        RegistroSimulacion registro,
+        String tipoEvento,
+        String nombreProceso,
+        BigInteger direccion,
+        BigInteger tamanio,
+        String detalle,
+        MemoriaVariable memoria) {
+
+        List<String> huecos = memoria.getHuecos().stream()
+            .map(h -> "Hueco[" + h.getDireccionInicio() + " - " + h.getDireccionFin()
+                      + ", tam=" + h.getTamanio() + "]")
+            .toList();
+
+        List<String> bloques = memoria.getBloquesOcupados().stream()
+            .map(b -> b.getNombreProceso() + "[" + b.getDireccionInicio()
+                      + " - " + b.getDireccionFin() + ", tam=" + b.getTamanio() + "]")
+            .toList();
+
+        registro.registrarMemoria(tipoEvento,
+            new RegistroSimulacion.SnapshotMemoria(
+                tipoEvento, nombreProceso, direccion, tamanio, detalle, huecos, bloques
+            )
+        );
     }
 }
