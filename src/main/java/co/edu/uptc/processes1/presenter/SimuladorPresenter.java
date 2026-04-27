@@ -30,9 +30,6 @@ public class SimuladorPresenter implements IPresenter {
         RegistroSimulacion.DESPACHAR,
         RegistroSimulacion.PROCESADOR,
         RegistroSimulacion.EXPIRACION_TIEMPO,
-        RegistroSimulacion.BLOQUEAR,
-        RegistroSimulacion.BLOQUEADO,
-        RegistroSimulacion.DESPERTAR,
         RegistroSimulacion.NO_EJECUTADO,
         RegistroSimulacion.FINALIZADO,
         RegistroSimulacion.FINALIZACION_PARTICIONES
@@ -54,7 +51,7 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
-    public void agregarProceso(String nombre, BigInteger tiempo, BigInteger tamanioMemoria, boolean pasaPorBloqueado) {
+    public void agregarProceso(String nombre, BigInteger tiempo, BigInteger tamanioMemoria) {
         if (existeNombre(nombre)) {
             view.mostrarError("El nombre ya existe");
             return;
@@ -64,8 +61,7 @@ public class SimuladorPresenter implements IPresenter {
             contadorId++,
             nombre,
             tiempo,
-            tamanioMemoria,
-            pasaPorBloqueado
+            tamanioMemoria
         );
 
         procesosCargados.add(nuevo);
@@ -123,7 +119,6 @@ public class SimuladorPresenter implements IPresenter {
         String nombre = view.getNombreProceso();
         String tiempoStr = view.getTiempoProceso();
         String tamanioMemoriaStr = view.getTamanioMemoria().replace(".", "");
-        boolean pasaPorBloqueado = view.isPasaPorBloqueado();
 
         if (nombre.isBlank() || tiempoStr.isBlank() || tamanioMemoriaStr.isBlank()) {
             view.mostrarError("Por favor, complete todos los campos obligatorios");
@@ -153,7 +148,7 @@ public class SimuladorPresenter implements IPresenter {
             return;
         }
 
-        agregarProceso(nombre, tiempo, tamanioMemoria, pasaPorBloqueado);
+        agregarProceso(nombre, tiempo, tamanioMemoria);
     }
 
     @Override
@@ -212,9 +207,6 @@ public class SimuladorPresenter implements IPresenter {
             case "despachar", "despacho" -> RegistroSimulacion.DESPACHAR;
             case "procesador" -> RegistroSimulacion.PROCESADOR;
             case "expiracion de tiempo", "expiracion", "expiracion de", "expiración de tiempo", "expiración" -> RegistroSimulacion.EXPIRACION_TIEMPO;
-            case "bloquear" -> RegistroSimulacion.BLOQUEAR;
-            case "bloqueado", "bloqueo" -> RegistroSimulacion.BLOQUEADO;
-            case "despertar" -> RegistroSimulacion.DESPERTAR;
             case "no ejecutado" -> RegistroSimulacion.NO_EJECUTADO;
             case "salida", "finalizado" -> RegistroSimulacion.FINALIZADO;
             case "finalizacion de particiones", "finalización de particiones" -> RegistroSimulacion.FINALIZACION_PARTICIONES;

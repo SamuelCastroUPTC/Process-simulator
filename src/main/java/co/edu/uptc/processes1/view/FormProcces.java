@@ -28,8 +28,8 @@ import java.util.List;
  *  ┌─────────────────────────────────────────────────────────────────────┐
  *  │  Crear Nuevo Proceso                              [ Cerrar ]        │
  *  ├──────────────────────────────┬──────────────────────────────────────┤
- *  │  DATOS BASICOS               │  CICLO DE VIDA                       │
- *  │  Nombre        [_________]   │  Bloqueable    [ Si/No ]             │
+ *  │  DATOS BASICOS               │  PROCESOS CARGADOS                  │
+ *  │  Nombre        [_________]   │  Lista de procesos en cola          │
  *  │  Tiempo (seg)  [_________]   │                                      │
  *  │  Tamano Mem.   [_________]   │                                      │
  *  ├──────────────────────────────┴──────────────────────────────────────┤
@@ -42,14 +42,10 @@ public class FormProcces {
     private TextField        txtNombre;
     private TextField        txtTiempo;
     private TextField        txtTamanioMemoria;   // campo nuevo
-    private ComboBox<String> cmbBloqueable;
     private ListView<String> listaProcesosCargados;
 
     private Stage    modalStage;
     private Runnable onCargar;
-
-    private static final String SI = "Si";
-    private static final String NO = "No";
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -113,22 +109,6 @@ public class FormProcces {
         colIzq.setPadding(new Insets(0, 20, 0, 0));
         HBox.setHgrow(colIzq, Priority.ALWAYS);
 
-        // ══════════════ PANEL DERECHO — Ciclo de vida ═════════════════════════
-        // Solo queda Bloqueable como comportamiento del proceso
-        cmbBloqueable = comboSiNo();
-
-        GridPane gridDer = panelGrid(130);
-        agregarFila(gridDer, 0, "Bloqueable:", cmbBloqueable);
-
-        VBox colDer = new VBox(10,
-            seccion("CICLO DE VIDA"),
-            new Separator(),
-            gridDer
-        );
-        colDer.setAlignment(Pos.TOP_LEFT);
-        colDer.setPadding(new Insets(0, 0, 0, 20));
-        HBox.setHgrow(colDer, Priority.ALWAYS);
-
         // ══════════════ PANEL DERECHO EXTRA — Procesos cargados ══════════════
         listaProcesosCargados = new ListView<>();
         listaProcesosCargados.setFocusTraversable(false);
@@ -154,11 +134,7 @@ public class FormProcces {
         sepV.setOrientation(javafx.geometry.Orientation.VERTICAL);
         sepV.setPrefHeight(50);
 
-        Separator sepV2 = new Separator();
-        sepV2.setOrientation(javafx.geometry.Orientation.VERTICAL);
-        sepV2.setPrefHeight(50);
-
-        HBox dosColumnas = new HBox(colIzq, sepV, colDer, sepV2, panelProcesos);
+        HBox dosColumnas = new HBox(colIzq, sepV, panelProcesos);
         dosColumnas.setAlignment(Pos.TOP_LEFT);
         dosColumnas.setPadding(new Insets(8, 0, 8, 0));
 
@@ -286,7 +262,6 @@ public class FormProcces {
         txtNombre.clear();
         txtTiempo.clear();
         txtTamanioMemoria.clear();
-        resetCombo(cmbBloqueable);
         // Quitamos el requestFocus() de aquí, porque lo pasamos al evento setOnShown de arriba
     }
 
@@ -295,12 +270,10 @@ public class FormProcces {
             txtNombre.setDisable(true);
             txtTiempo.setDisable(false);
             txtTamanioMemoria.setDisable(false);
-            cmbBloqueable.setDisable(false);
         } else {
             txtNombre.setDisable(false);
             txtTiempo.setDisable(false);
             txtTamanioMemoria.setDisable(false);
-            cmbBloqueable.setDisable(false);
         }
     }
 
@@ -309,7 +282,6 @@ public class FormProcces {
     public String  getNombre()            { return txtNombre.getText().trim(); }
     public String  getTiempo()            { return txtTiempo.getText().trim(); }
     public String  getTamanioMemoria()    { return txtTamanioMemoria.getText().replaceAll("\\.", "").trim(); }
-    public boolean isPasaPorBloqueado()   { return SI.equals(cmbBloqueable.getValue()); }
 
     public void setProcesosCargados(List<Proceso> procesos) {
         List<String> items = new ArrayList<>();
@@ -347,20 +319,6 @@ public class FormProcces {
         if (prompt != null) tf.setPromptText(prompt);
         tf.setMaxWidth(Double.MAX_VALUE);
         return tf;
-    }
-
-    private ComboBox<String> comboSiNo() {
-        ComboBox<String> cb = new ComboBox<>(
-            FXCollections.observableArrayList(SI, NO)
-        );
-        cb.setPromptText("Seleccione...");
-        cb.setMaxWidth(Double.MAX_VALUE);
-        return cb;
-    }
-
-    private <T> void resetCombo(ComboBox<T> cb) {
-        cb.setValue(null);
-        cb.setPromptText("Seleccione...");
     }
 
     private void soloNumeros(TextField tf) {

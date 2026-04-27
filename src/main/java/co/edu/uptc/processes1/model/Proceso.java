@@ -17,7 +17,6 @@ public class Proceso {
     private final StringProperty nombre;
     private final ObjectProperty<BigInteger> tiempoRestante;
     private final ObjectProperty<BigInteger> tamanioMemoria;
-    private final BooleanProperty pasaPorBloqueado;
     private final StringProperty estadoActual;
     private final BooleanProperty excedeTamanoParticion;
     private Particion particion;
@@ -26,8 +25,7 @@ public class Proceso {
         int id,
         String nombre,
         BigInteger tiempoRestante,
-        BigInteger tamanioMemoria,
-        boolean pasaPorBloqueado
+        BigInteger tamanioMemoria
     ) {
         this.id = new SimpleIntegerProperty(id);
         this.nombre = new SimpleStringProperty(nombre);
@@ -35,27 +33,13 @@ public class Proceso {
         this.tamanioMemoria = new SimpleObjectProperty<>(BigInteger.ZERO);
         this.tiempoRestante.set(tiempoRestante);
         this.tamanioMemoria.set(tamanioMemoria);
-        this.pasaPorBloqueado = new SimpleBooleanProperty(pasaPorBloqueado);
         this.estadoActual = new SimpleStringProperty("Listo");
         this.excedeTamanoParticion = new SimpleBooleanProperty(false);
         this.particion = null;
     }
 
-    public Proceso(int id, String nombre, BigInteger tiempoRestante, BigInteger tamanioMemoria) {
-        this(id, nombre, tiempoRestante, tamanioMemoria, false);
-    }
-
     public Proceso(String nombre, BigInteger tiempoRestante, BigInteger tamanioMemoria) {
         this(0, nombre, tiempoRestante, tamanioMemoria);
-    }
-
-    public Proceso(
-        String nombre,
-        BigInteger tiempoRestante,
-        BigInteger tamanioMemoria,
-        boolean pasaPorBloqueado
-    ) {
-        this(0, nombre, tiempoRestante, tamanioMemoria, pasaPorBloqueado);
     }
 
     public int getId() {
@@ -76,10 +60,6 @@ public class Proceso {
 
     public BigInteger getTamanioMemoria() {
         return tamanioMemoria.get();
-    }
-
-    public boolean isPasaPorBloqueado() {
-        return pasaPorBloqueado.get();
     }
 
     public String getEstadoActual() {
@@ -142,10 +122,6 @@ public class Proceso {
         return tamanioMemoria;
     }
 
-    public BooleanProperty pasaPorBloqueadoProperty() {
-        return pasaPorBloqueado;
-    }
-
     public StringProperty estadoActualProperty() {
         return estadoActual;
     }
@@ -155,8 +131,7 @@ public class Proceso {
             getId(),
             getNombre(),
             getTiempoRestante(),
-            getTamanioMemoria(),
-            isPasaPorBloqueado()
+            getTamanioMemoria()
         );
         copia.setEstadoActual(getEstadoActual());
         copia.setParticion(getParticion());

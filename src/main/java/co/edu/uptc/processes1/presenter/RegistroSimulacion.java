@@ -30,9 +30,9 @@ public class RegistroSimulacion {
         String nombre,
         BigInteger tiempoRestante,
         BigInteger tamanioMemoria,
-        boolean pasaPorBloqueado,
         String estadoActual,
-        String nombreParticion
+        String nombreParticion,
+        String motivoNoEjecucion
     ) {}
 
     public static final String LISTO = "Listo";
@@ -40,9 +40,6 @@ public class RegistroSimulacion {
     public static final String DESPACHAR = "Despachar";
     public static final String PROCESADOR = "Procesador";
     public static final String EXPIRACION_TIEMPO = "Expiracion de tiempo";
-    public static final String BLOQUEAR = "Bloquear";
-    public static final String BLOQUEADO = "Bloqueado";
-    public static final String DESPERTAR = "Despertar";
     public static final String NO_EJECUTADO = "No Ejecutado";
     public static final String FINALIZADO = "Salida";
     public static final String FINALIZACION_PARTICIONES = "Finalizacion de particiones";
@@ -52,9 +49,6 @@ public class RegistroSimulacion {
         DESPACHAR,
         PROCESADOR,
         EXPIRACION_TIEMPO,
-        BLOQUEAR,
-        BLOQUEADO,
-        DESPERTAR,
         NO_EJECUTADO,
         FINALIZADO,
         FINALIZACION_PARTICIONES
@@ -82,11 +76,26 @@ public class RegistroSimulacion {
             snapshot.getNombre(),
             snapshot.getTiempoRestante(),
             snapshot.getTamanioMemoria(),
-            snapshot.isPasaPorBloqueado(),
             snapshot.getEstadoActual(),
-            nombreParticion
+            nombreParticion,
+            null
         );
         historialProcesos.computeIfAbsent(estado, key -> new ArrayList<>()).add(snapshotLigero);
+    }
+
+    public void registrarNoEjecutado(Proceso snapshot, String motivo) {
+        historialTexto.computeIfAbsent(NO_EJECUTADO, key -> new ArrayList<>()).add(snapshot.toString());
+        String nombreParticion = snapshot.getParticion() != null ? snapshot.getParticion().getNombre() : null;
+        SnapshotProceso snapshotLigero = new SnapshotProceso(
+            snapshot.getId(),
+            snapshot.getNombre(),
+            snapshot.getTiempoRestante(),
+            snapshot.getTamanioMemoria(),
+            snapshot.getEstadoActual(),
+            nombreParticion,
+            motivo
+        );
+        historialProcesos.computeIfAbsent(NO_EJECUTADO, key -> new ArrayList<>()).add(snapshotLigero);
     }
 
     public void registrarTexto(String estado, String mensaje) {

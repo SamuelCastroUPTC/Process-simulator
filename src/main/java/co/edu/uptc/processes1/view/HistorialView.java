@@ -47,9 +47,6 @@ public class HistorialView {
         Map.entry("Despachar",            new MetaEstado("#7B9EA6", "Procesos despachados al procesador")),
         Map.entry("Procesador",           new MetaEstado("#D4B896", "Procesos en ejecucion en el CPU")),
         Map.entry("Expiracion de tiempo", new MetaEstado("#D4A06A", "Procesos que expiraron su quantum")),
-        Map.entry("Bloquear",             new MetaEstado("#E8A598", "Procesos enviados al estado bloqueado")),
-        Map.entry("Bloqueado",            new MetaEstado("#B8A8C8", "Procesos en estado bloqueado")),
-        Map.entry("Despertar",            new MetaEstado("#98C8D4", "Procesos despertados desde el bloqueo")),
         Map.entry(RegistroSimulacion.NO_EJECUTADO, new MetaEstado("#CCCCCC", "Procesos que superan el tamano de su particion o sin particion asignada")),
         Map.entry(ESTADO_FINALIZADO,      new MetaEstado("#AAAAAA", "Procesos que finalizaron su ejecucion")),
         Map.entry(RegistroSimulacion.FINALIZACION_PARTICIONES, new MetaEstado("#AAAAAA", "Procesos finalizados agrupados por particion"))
@@ -214,6 +211,17 @@ public class HistorialView {
                 }
             });
             tv.getColumns().add(colTiempo);
+        }
+
+        if (RegistroSimulacion.NO_EJECUTADO.equalsIgnoreCase(estado)) {
+            TableColumn<RegistroSimulacion.SnapshotProceso, String> colMotivo = new TableColumn<>("Motivo");
+            colMotivo.setCellValueFactory(cell -> {
+                String motivo = cell.getValue().motivoNoEjecucion();
+                return new SimpleStringProperty(motivo != null ? motivo : "Sin especificar");
+            });
+            colMotivo.setPrefWidth(380);
+            colMotivo.setMinWidth(200);
+            tv.getColumns().add(colMotivo);
         }
         return tv;
     }

@@ -29,7 +29,10 @@ public class MotorSimulacion {
 
         for (ProcesoRuntime runtime : procesosOrdenados) {
             if (runtime.tamanioMemoria.compareTo(tamanioTotalMemoria) > 0) {
-                registrarEstado(registro, RegistroSimulacion.NO_EJECUTADO, runtime);
+                BigInteger particionMasGrande = obtenerParticionMasGrandeDisponible(memoria);
+                String motivo = "Su tamano de memoria (" + runtime.tamanioMemoria
+                    + ") supera la particion mas grande disponible (" + particionMasGrande + ")";
+                registrarEstadoNoEjecutado(registro, motivo, runtime);
             } else {
                 colaListos.add(runtime);
             }
@@ -73,10 +76,6 @@ public class MotorSimulacion {
                     if (actual.tiempoRestante.compareTo(BigInteger.ZERO) <= 0) {
                         registrarEstado(registro, RegistroSimulacion.FINALIZADO, actual, BigInteger.ZERO);
                         termino = true;
-                    } else if (actual.pasaPorBloqueado) {
-                        registrarEstado(registro, RegistroSimulacion.BLOQUEAR, actual);
-                        registrarEstado(registro, RegistroSimulacion.BLOQUEADO, actual);
-                        registrarEstado(registro, RegistroSimulacion.DESPERTAR, actual);
                     } else {
                         registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
                     }
@@ -112,8 +111,7 @@ public class MotorSimulacion {
             runtime.id,
             runtime.nombre,
             runtime.tiempoRestante,
-            runtime.tamanioMemoria,
-            runtime.pasaPorBloqueado
+            runtime.tamanioMemoria
         );
         snapshot.setTiempoRestante(tiempoSnapshot);
         snapshot.setEstadoActual(estado);
@@ -125,11 +123,29 @@ public class MotorSimulacion {
         registro.registrar(estado, snapshot);
     }
 
+    private void registrarEstadoNoEjecutado(RegistroSimulacion registro, String motivo, ProcesoRuntime runtime) {
+        Proceso snapshot = new Proceso(
+            runtime.id,
+            runtime.nombre,
+            runtime.tiempoRestante,
+            runtime.tamanioMemoria
+        );
+        snapshot.setEstadoActual(RegistroSimulacion.NO_EJECUTADO);
+        snapshot.setParticion(null);
+        registro.registrarNoEjecutado(snapshot, motivo);
+    }
+
+    private BigInteger obtenerParticionMasGrandeDisponible(MemoriaVariable memoria) {
+        return memoria.getHuecos().stream()
+            .map(hueco -> hueco.getTamanio())
+            .max(BigInteger::compareTo)
+            .orElse(BigInteger.ZERO);
+    }
+
     private static final class ProcesoRuntime {
         private final int id;
         private final String nombre;
         private final BigInteger tamanioMemoria;
-        private final boolean pasaPorBloqueado;
         private BigInteger tiempoRestante;
         private String referenciaMemoria;
 
@@ -137,14 +153,12 @@ public class MotorSimulacion {
             int id,
             String nombre,
             BigInteger tiempoRestante,
-            BigInteger tamanioMemoria,
-            boolean pasaPorBloqueado
+            BigInteger tamanioMemoria
         ) {
             this.id = id;
             this.nombre = nombre;
             this.tiempoRestante = tiempoRestante;
             this.tamanioMemoria = tamanioMemoria;
-            this.pasaPorBloqueado = pasaPorBloqueado;
             this.referenciaMemoria = null;
         }
 
@@ -153,8 +167,7 @@ public class MotorSimulacion {
                 p.getId(),
                 p.getNombre(),
                 p.getTiempoRestante(),
-                p.getTamanioMemoria(),
-                p.isPasaPorBloqueado()
+                p.getTamanioMemoria()
             );
         }
     }

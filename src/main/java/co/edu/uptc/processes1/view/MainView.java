@@ -60,8 +60,7 @@ public class MainView implements IView {
 
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO, "Despachar", "Procesador",
-        "Expiracion de tiempo", "Bloquear", "Bloqueado",
-        "Despertar", RegistroSimulacion.NO_EJECUTADO, "Salida",
+        "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Salida",
         RegistroSimulacion.FINALIZACION_PARTICIONES
     };
 
@@ -275,8 +274,6 @@ public class MainView implements IView {
             }
         });
 
-        TableColumn<Proceso, Boolean> colBloq = boolCol("Bloqueable", "pasaPorBloqueado", 110);
-
         TableColumn<Proceso, Void> colEditar = accionCol("Editar", "#7B9EA6", proceso ->
             mostrarAviso("Edicion disponible en la siguiente iteracion. Proceso: " + proceso.getNombre())
         );
@@ -287,7 +284,7 @@ public class MainView implements IView {
         colEliminar.setPrefWidth(100);
         colEliminar.setMinWidth(95);
 
-        tv.getColumns().addAll(colNombre, colTiempo, colMemoria, colBloq, colEditar, colEliminar);
+        tv.getColumns().addAll(colNombre, colTiempo, colMemoria, colEditar, colEliminar);
         return tv;
     }
 
@@ -378,32 +375,6 @@ public class MainView implements IView {
         card.setMaxWidth(Double.MAX_VALUE);
 
         return card;
-    }
-
-    @SuppressWarnings("unchecked")
-    private TableColumn<Proceso, Boolean> boolCol(String header, String property, double width) {
-        TableColumn<Proceso, Boolean> col = new TableColumn<>(header);
-        col.setCellValueFactory(new PropertyValueFactory<>(property));
-        col.setPrefWidth(width);
-        col.setMinWidth(width);
-        col.setCellFactory(c -> new TableCell<>() {
-            @Override
-            protected void updateItem(Boolean item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                    return;
-                }
-                Label b = new Label(item ? "Si" : "No");
-                b.setStyle(item
-                    ? "-fx-text-fill: #5A8550; -fx-font-weight: bold;"
-                    : "-fx-text-fill: #BBBBBB; -fx-font-weight: bold;");
-                setGraphic(b);
-                setText(null);
-            }
-        });
-        return col;
     }
 
     @SuppressWarnings("unchecked")
@@ -596,11 +567,6 @@ public class MainView implements IView {
     @Override
     public String getTamanioMemoria() {
         return formularioModal != null ? formularioModal.getTamanioMemoria() : "";
-    }
-
-    @Override
-    public boolean isPasaPorBloqueado() {
-        return formularioModal != null && formularioModal.isPasaPorBloqueado();
     }
 
     @Override

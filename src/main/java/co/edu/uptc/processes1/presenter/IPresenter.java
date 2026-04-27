@@ -21,8 +21,7 @@ public interface IPresenter {
     void agregarProceso(
         String nombre,
         BigInteger tiempo,
-        BigInteger tamanioMemoria,
-        boolean pasaPorBloqueado
+        BigInteger tamanioMemoria
     );
 
     /** Inicia el calculo completo de la simulacion en bucle cerrado. */

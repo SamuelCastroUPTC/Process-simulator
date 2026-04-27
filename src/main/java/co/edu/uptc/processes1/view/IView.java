@@ -9,10 +9,8 @@ import java.util.List;
  * Interfaz IView — Contrato MVP entre la Vista y el Presentador.
  *
  * Versión simplificada para el modelo de particiones de memoria:
- *   - Se eliminaron: isPasaPorSuspendidoListo, isPasaPorSuspendidoBloqueado,
- *                    isGeneraComunicacion, isSeDestruye
+ *   - Se eliminaron banderas de ciclo de vida avanzadas.
  *   - Se agregó:     getTamanioMemoria  (campo nuevo en el formulario)
- *   - Se mantiene:   isPasaPorBloqueado
  */
 public interface IView {
 
@@ -48,9 +46,6 @@ public interface IView {
 
     /** Tamaño requerido en memoria en unidades (nuevo campo). */
     String getTamanioMemoria();
-
-    /** ¿El proceso puede bloquearse por E/S u otro evento? */
-    boolean isPasaPorBloqueado();
 
     // ── Control del modal ─────────────────────────────────────────────────────
 
