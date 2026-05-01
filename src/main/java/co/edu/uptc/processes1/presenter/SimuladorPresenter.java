@@ -7,7 +7,6 @@ import co.edu.uptc.processes1.view.IView;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,9 +85,7 @@ public class SimuladorPresenter implements IPresenter {
         view.setBtnIniciarHabilitado(false);
         view.actualizarEstadoSimulacion("Simulacion en progreso...");
 
-        List<Proceso> procesosOrdenados = procesosCargados.stream()
-            .sorted(Comparator.comparing(Proceso::getTiempoRestante))
-            .collect(Collectors.toList());
+        List<Proceso> procesosOrdenados = new ArrayList<>(procesosCargados);
 
         ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados, memoriaVariable);
         sincronizarHistorialesConRegistro(ultimoRegistro);

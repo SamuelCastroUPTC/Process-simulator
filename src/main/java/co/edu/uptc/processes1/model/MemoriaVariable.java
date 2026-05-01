@@ -49,6 +49,16 @@ public class MemoriaVariable {
         return huecos.size() < huecoAntes + 1;
     }
 
+    public boolean liberarSinCondensar(int idProceso) {
+        boolean removido = bloquesOcupados.removeIf(b -> b.getIdProceso() == idProceso);
+        if (!removido) {
+            return false;
+        }
+
+        recalcularHuecos();
+        return true;
+    }
+
     private void recalcularHuecos() {
         huecos.clear();
 

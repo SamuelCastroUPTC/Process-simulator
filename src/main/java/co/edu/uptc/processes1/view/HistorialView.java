@@ -376,7 +376,10 @@ public class HistorialView {
             if (uso == null || uso.nombreProceso() == null || uso.nombreProceso().isBlank()) {
                 continue;
             }
-            pasosExpandidos.add(uso.nombreProceso());
+            pasosExpandidos.add(
+                uso.nombreProceso() + " → " + uso.nombreParticion()
+                    + " (" + uso.tiempoCpu().divide(BigInteger.valueOf(1000L)) + "s)"
+            );
         }
 
         ListView<String> lista = new ListView<>();

@@ -202,6 +202,55 @@ public class RegistroSimulacion {
         return Collections.unmodifiableList(historialCondensacion);
     }
 
+    public void actualizarParticionesFinalizadas(Map<String, String> redirecciones) {
+        if (redirecciones == null || redirecciones.isEmpty()) {
+            return;
+        }
+
+        actualizarParticionesEnLista(historialProcesos.get(FINALIZADO), redirecciones);
+        actualizarParticionesEnLista(historialProcesos.get(FINALIZACION_PARTICIONES), redirecciones);
+    }
+
+    private void actualizarParticionesEnLista(List<SnapshotProceso> snapshots, Map<String, String> redirecciones) {
+        if (snapshots == null || snapshots.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < snapshots.size(); i++) {
+            SnapshotProceso snapshot = snapshots.get(i);
+            String nombreParticion = snapshot.nombreParticion();
+            if (nombreParticion == null || nombreParticion.isBlank()) {
+                continue;
+            }
+
+            String actualizado = resolverParticion(nombreParticion, redirecciones);
+            if (!actualizado.equals(nombreParticion)) {
+                snapshots.set(i, new SnapshotProceso(
+                    snapshot.id(),
+                    snapshot.nombre(),
+                    snapshot.tiempoRestante(),
+                    snapshot.tamanioMemoria(),
+                    snapshot.estadoActual(),
+                    actualizado,
+                    snapshot.motivoNoEjecucion()
+                ));
+            }
+        }
+    }
+
+    private String resolverParticion(String nombreParticion, Map<String, String> redirecciones) {
+        String actual = nombreParticion;
+        int guardia = 0;
+        while (redirecciones.containsKey(actual) && guardia++ < 32) {
+            String siguiente = redirecciones.get(actual);
+            if (siguiente == null || siguiente.isBlank() || siguiente.equals(actual)) {
+                break;
+            }
+            actual = siguiente;
+        }
+        return actual;
+    }
+
     // ¡NUEVO MÉTODO! Para obtener el historial de memoria
     public List<SnapshotMemoria> getHistorialMemoria(String evento) {
         return Collections.unmodifiableList(
