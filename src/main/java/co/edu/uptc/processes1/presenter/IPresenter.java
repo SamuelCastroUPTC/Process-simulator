@@ -61,6 +61,6 @@ public interface IPresenter {
 
     void onVerHistorialMemoria(String evento);
 
-    void onVerHistorialCondensacion();
+    void onVerHistorialParticiones();
     
 }

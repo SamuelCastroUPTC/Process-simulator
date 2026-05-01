@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import co.edu.uptc.processes1.model.HuecoMemoria;
 import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
@@ -80,25 +81,11 @@ public class MotorSimulacion {
                 }
                 actual.referenciaMemoria = nombreParticionPorProceso.get(actual.id);
                 nombrePorDireccion.put(direccionInicio, actual.referenciaMemoria);
-
-                BigInteger direccionMinimaFusion = direccionInicio;
-                List<String> nombresAdyacentes = new ArrayList<>();
-                nombresAdyacentes.add(actual.referenciaMemoria);
-                List<BigInteger> direccionesFusionadas = new ArrayList<>();
-                for (var hueco : memoria.getHuecos()) {
-                    boolean adyacenteIzquierda = hueco.getDireccionFin().equals(direccionInicio);
-                    boolean adyacenteDerecha = hueco.getDireccionInicio().equals(direccionInicio.add(actual.tamanioMemoria));
-                    if (adyacenteIzquierda || adyacenteDerecha) {
-                        direccionesFusionadas.add(hueco.getDireccionInicio());
-                        nombresAdyacentes.add(nombrePorDireccion.getOrDefault(
-                            hueco.getDireccionInicio(),
-                            "H[" + hueco.getDireccionInicio() + "]"
-                        ));
-                        if (hueco.getDireccionInicio().compareTo(direccionMinimaFusion) < 0) {
-                            direccionMinimaFusion = hueco.getDireccionInicio();
-                        }
-                    }
-                }
+                registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                    actual.referenciaMemoria,
+                    "Asignada a proceso '" + actual.nombre + "'",
+                    actual.tamanioMemoria
+                ));
 
                 // ── NUEVO: registrar asignación ──────────────────────────────────────────
                 registrarEventoMemoria(registro, RegistroSimulacion.ASIGNACION,
@@ -142,58 +129,81 @@ public class MotorSimulacion {
 
                 } finally {
                     if (termino) {
+                        List<HuecoMemoria> huecosPrevios = new ArrayList<>(memoria.getHuecos());
                         BigInteger dirProceso = obtenerDireccionProceso(memoria, actual.id);
-                        BigInteger dirFinProceso = dirProceso != null
+                        BigInteger finProceso = dirProceso != null
                             ? dirProceso.add(actual.tamanioMemoria)
                             : null;
 
-                        List<String> nombresAFusionar = new ArrayList<>();
-                        nombresAFusionar.add(actual.referenciaMemoria);
-
-                        for (var hueco : memoria.getHuecos()) {
-                            boolean antesDelProceso = dirProceso != null && hueco.getDireccionFin().equals(dirProceso);
-                            boolean despuesDelProceso = dirFinProceso != null && hueco.getDireccionInicio().equals(dirFinProceso);
-                            if (antesDelProceso || despuesDelProceso) {
-                                String nombreHueco = nombrePorDireccion.getOrDefault(hueco.getDireccionInicio(), null);
-                                if (nombreHueco != null && !nombresAFusionar.contains(nombreHueco)) {
-                                    nombresAFusionar.add(nombreHueco);
-                                }
-                            }
-                        }
-
                         boolean huboCondensacion = memoria.liberar(actual.id);
+                        List<HuecoMemoria> huecosNuevos = new ArrayList<>(memoria.getHuecos());
 
                         registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                             actual.nombre, null, actual.tamanioMemoria,
                             "Proceso '" + actual.nombre + "' terminó. Partición "
                                 + actual.referenciaMemoria + " libre", memoria);
 
-                        if (huboCondensacion && nombresAFusionar.size() > 1) {
-                            String particionResultante = "PAR" + contadorParticion++;
-                            String condensadas = String.join("+", nombresAFusionar);
-                            BigInteger tamanioResultante = memoria.getEspacioLibreTotal();
+                        boolean huboFusiones = huboCondensacion && huecosNuevos.size() < huecosPrevios.size() + 1;
+                        if (huboFusiones && dirProceso != null) {
+                            List<HuecoMemoria> huecosFusionados = new ArrayList<>();
+                            List<String> nombresUnidos = new ArrayList<>();
+                            nombresUnidos.add(actual.referenciaMemoria);
+
+                            BigInteger direccionResultado = dirProceso;
+
+                            for (HuecoMemoria hueco : huecosPrevios) {
+                                boolean adyacenteIzquierda = hueco.getDireccionFin().equals(dirProceso);
+                                boolean adyacenteDerecha = finProceso != null && hueco.getDireccionInicio().equals(finProceso);
+                                if (adyacenteIzquierda || adyacenteDerecha) {
+                                    huecosFusionados.add(hueco);
+                                    String nombreHueco = nombrePorDireccion.get(hueco.getDireccionInicio());
+                                    if (nombreHueco == null || nombreHueco.isBlank()) {
+                                        nombreHueco = "H[" + hueco.getDireccionInicio() + "]";
+                                    }
+                                    if (!nombresUnidos.contains(nombreHueco)) {
+                                        nombresUnidos.add(nombreHueco);
+                                    }
+                                    if (hueco.getDireccionInicio().compareTo(direccionResultado) < 0) {
+                                        direccionResultado = hueco.getDireccionInicio();
+                                    }
+                                }
+                            }
+
+                            String nombreNuevo = "PAR" + contadorParticion++;
+                            BigInteger direccionFinalFusion = direccionResultado;
+                            BigInteger tamanioResultante = huecosNuevos.stream()
+                                .filter(h -> h.getDireccionInicio().equals(direccionFinalFusion))
+                                .map(HuecoMemoria::getTamanio)
+                                .findFirst()
+                                .orElse(actual.tamanioMemoria);
+                            String nombresUnidosTexto = String.join("+", nombresUnidos);
 
                             registro.registrarCondensacion(new RegistroSimulacion.SnapshotCondensacion(
-                                particionResultante,
-                                condensadas,
+                                nombreNuevo,
+                                nombresUnidosTexto,
+                                tamanioResultante
+                            ));
+                            registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                                nombreNuevo,
+                                "Condensación de " + nombresUnidosTexto,
                                 tamanioResultante
                             ));
 
-                            for (String nombre : nombresAFusionar) {
-                                nombreFinal.put(nombre, particionResultante);
+                            for (String nombre : nombresUnidos) {
+                                nombreFinal.put(nombre, nombreNuevo);
                             }
 
                             nombrePorDireccion.remove(dirProceso);
-                            for (BigInteger inicioHueco : direccionesFusionadas) {
-                                nombrePorDireccion.remove(inicioHueco);
+                            for (HuecoMemoria huecoFusionado : huecosFusionados) {
+                                nombrePorDireccion.remove(huecoFusionado.getDireccionInicio());
                             }
-                            nombrePorDireccion.put(direccionMinimaFusion, particionResultante);
+                            nombrePorDireccion.put(direccionFinalFusion, nombreNuevo);
 
                             registro.actualizarParticionesFinalizadas(nombreFinal);
 
                             registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
                                 actual.nombre, null, null,
-                                "Condensación: " + condensadas + " → " + particionResultante, memoria);
+                                "Condensación: " + nombresUnidosTexto + " → " + nombreNuevo, memoria);
                         } else if (dirProceso != null) {
                             nombrePorDireccion.put(dirProceso, actual.referenciaMemoria);
                         }
@@ -222,11 +232,6 @@ public class MotorSimulacion {
                 break;
             }
         }
-
-        registro.copiarEstado(
-            RegistroSimulacion.FINALIZADO,
-            RegistroSimulacion.FINALIZACION_PARTICIONES
-        );
 
         return registro;
     }

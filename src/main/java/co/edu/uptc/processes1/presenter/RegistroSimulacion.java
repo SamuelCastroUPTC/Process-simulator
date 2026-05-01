@@ -49,11 +49,17 @@ public class RegistroSimulacion {
             String motivoNoEjecucion
     ) {}
 
-        public record SnapshotCondensacion(
+    public record SnapshotCondensacion(
             String particionResultante,
             String particionesCondensadas,
             BigInteger tamanioResultante
-        ) {}
+    ) {}
+
+    public record SnapshotParticion(
+            String nombreParticion,
+            String descripcion,
+            BigInteger tamanio
+    ) {}
 
     // ==========================================
     // 2. CONSTANTES DE ESTADOS
@@ -65,7 +71,8 @@ public class RegistroSimulacion {
     public static final String EXPIRACION_TIEMPO = "Expiracion de tiempo";
     public static final String NO_EJECUTADO = "No Ejecutado";
     public static final String FINALIZADO = "Salida";
-    public static final String FINALIZACION_PARTICIONES = "Finalizacion de particiones";
+    public static final String HISTORIAL_PARTICIONES = "Particiones";
+    public static final String FINALIZACION_PARTICIONES = HISTORIAL_PARTICIONES;
 
     // ¡NUEVAS CONSTANTES! Para memoria
     public static final String ASIGNACION   = "Asignación";
@@ -89,6 +96,7 @@ public class RegistroSimulacion {
     private final Map<String, List<SnapshotProceso>> historialProcesos;
     private final Map<String, List<UsoParticion>> usoParticiones;
     private final List<SnapshotCondensacion> historialCondensacion;
+    private final List<SnapshotParticion> historialParticiones;
     
     // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
@@ -101,6 +109,7 @@ public class RegistroSimulacion {
         this.historialProcesos = new LinkedHashMap<>();
         this.usoParticiones = new LinkedHashMap<>();
         this.historialCondensacion = new ArrayList<>();
+        this.historialParticiones = new ArrayList<>();
         this.historialMemoria = new LinkedHashMap<>(); // Inicializamos el mapa nuevo
         
         // ¡NUEVO CICLO! Inicializamos las listas vacías para los eventos de memoria
@@ -163,6 +172,10 @@ public class RegistroSimulacion {
         historialCondensacion.add(snap);
     }
 
+    public void registrarParticion(SnapshotParticion snap) {
+        historialParticiones.add(snap);
+    }
+
     // ==========================================
     // 6. GETTERS Y UTILIDADES
     // ==========================================
@@ -202,13 +215,17 @@ public class RegistroSimulacion {
         return Collections.unmodifiableList(historialCondensacion);
     }
 
+    public List<SnapshotParticion> getHistorialParticiones() {
+        return Collections.unmodifiableList(historialParticiones);
+    }
+
     public void actualizarParticionesFinalizadas(Map<String, String> redirecciones) {
         if (redirecciones == null || redirecciones.isEmpty()) {
             return;
         }
 
         actualizarParticionesEnLista(historialProcesos.get(FINALIZADO), redirecciones);
-        actualizarParticionesEnLista(historialProcesos.get(FINALIZACION_PARTICIONES), redirecciones);
+        actualizarParticionesEnLista(historialProcesos.get(HISTORIAL_PARTICIONES), redirecciones);
     }
 
     private void actualizarParticionesEnLista(List<SnapshotProceso> snapshots, Map<String, String> redirecciones) {

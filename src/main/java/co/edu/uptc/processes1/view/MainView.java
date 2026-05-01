@@ -56,18 +56,18 @@ public class MainView implements IView {
     
     // --- CAMBIO A: Nuevo mapa de ventanas de memoria ---
     private final Map<String, HistorialMemoriaView> ventanasMemoria = new HashMap<>();
-    private HistorialCondensacionView ventanaCondensacion;
+    private HistorialParticionesView ventanaParticiones;
 
     private Object presenter;
 
     private double dragOffsetX;
     private double dragOffsetY;
 
-    // --- CAMBIO A: Array ESTADOS_HISTORIAL actualizado con los 3 estados nuevos ---
+    // --- CAMBIO A: Array ESTADOS_HISTORIAL actualizado con los estados nuevos ---
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO, "Despachar", "Procesador",
-        "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Salida",
-        RegistroSimulacion.FINALIZACION_PARTICIONES,
+        "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Finalización",
+        "Particiones",
         RegistroSimulacion.ASIGNACION,       // nuevo
         RegistroSimulacion.LIBERACION,       // nuevo
         RegistroSimulacion.CONDENSACION      // nuevo
@@ -441,13 +441,18 @@ public class MainView implements IView {
     // --- CAMBIO C: Redirigir los eventos de memoria al nuevo método del presenter ---
     private void notificarVerHistorial(String estado) {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
-            if (RegistroSimulacion.CONDENSACION.equals(estado)) {
-                p.onVerHistorialCondensacion();
+            if ("Particiones".equals(estado)) {
+                p.onVerHistorialParticiones();
+                return;
+            }
+            if ("Finalización".equals(estado) || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
+                p.onVerHistorial(RegistroSimulacion.FINALIZADO);
                 return;
             }
             if (RegistroSimulacion.ASIGNACION.equals(estado)
-                    || RegistroSimulacion.LIBERACION.equals(estado)) {
-                p.onVerHistorialMemoria(estado);  // método nuevo en IPresenter
+                    || RegistroSimulacion.LIBERACION.equals(estado)
+                    || RegistroSimulacion.CONDENSACION.equals(estado)) {
+                p.onVerHistorialMemoria(estado);
             } else {
                 p.onVerHistorial(estado);
             }
@@ -624,16 +629,16 @@ public class MainView implements IView {
     }
 
     @Override
-    public void mostrarHistorialCondensacion(List<RegistroSimulacion.SnapshotCondensacion> datos) {
-        if (ventanaCondensacion == null) {
-            ventanaCondensacion = new HistorialCondensacionView();
+    public void mostrarHistorialParticiones(List<RegistroSimulacion.SnapshotParticion> datos) {
+        if (ventanaParticiones == null) {
+            ventanaParticiones = new HistorialParticionesView();
         }
-        ventanaCondensacion.mostrarConDatos(datos);
+        ventanaParticiones.mostrarConDatos(datos);
     }
 
     private boolean esEstadoFinalizacion(String estado) {
         return RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)
-            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
+            || RegistroSimulacion.HISTORIAL_PARTICIONES.equalsIgnoreCase(estado);
     }
 
     @Override

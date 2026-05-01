@@ -31,7 +31,7 @@ public class SimuladorPresenter implements IPresenter {
     RegistroSimulacion.EXPIRACION_TIEMPO,
     RegistroSimulacion.NO_EJECUTADO,
     RegistroSimulacion.FINALIZADO,
-    RegistroSimulacion.FINALIZACION_PARTICIONES,
+    RegistroSimulacion.HISTORIAL_PARTICIONES,
     RegistroSimulacion.ASIGNACION,
     RegistroSimulacion.LIBERACION,
     RegistroSimulacion.CONDENSACION
@@ -263,7 +263,7 @@ public class SimuladorPresenter implements IPresenter {
             case "expiracion de tiempo", "expiracion", "expiracion de", "expiración de tiempo", "expiración" -> RegistroSimulacion.EXPIRACION_TIEMPO;
             case "no ejecutado" -> RegistroSimulacion.NO_EJECUTADO;
             case "salida", "finalizado" -> RegistroSimulacion.FINALIZADO;
-            case "finalizacion de particiones", "finalización de particiones" -> RegistroSimulacion.FINALIZACION_PARTICIONES;
+            case "finalizacion de particiones", "finalización de particiones", "particiones" -> RegistroSimulacion.HISTORIAL_PARTICIONES;
             default -> estado;
         };
     }
@@ -276,7 +276,7 @@ public void onVerHistorialMemoria(String evento) {
 }
 
     @Override
-    public void onVerHistorialCondensacion() {
-        view.mostrarHistorialCondensacion(ultimoRegistro.getHistorialCondensacion());
+    public void onVerHistorialParticiones() {
+        view.mostrarHistorialParticiones(ultimoRegistro.getHistorialParticiones());
     }
 }

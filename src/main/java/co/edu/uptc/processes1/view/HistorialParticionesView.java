@@ -18,9 +18,10 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.math.BigInteger;
 import java.util.List;
 
-public class HistorialCondensacionView {
+public class HistorialParticionesView {
 
     private Stage stage;
     private Label lblContador;
@@ -29,7 +30,7 @@ public class HistorialCondensacionView {
     private double dragOffsetX;
     private double dragOffsetY;
 
-    public HistorialCondensacionView() {
+    public HistorialParticionesView() {
         buildUI();
     }
 
@@ -43,17 +44,17 @@ public class HistorialCondensacionView {
         stage.setWidth(bounds.getWidth());
         stage.setHeight(bounds.getHeight());
 
-        Label lblTitulo = new Label("Historial - Particiones");
+        Label lblTitulo = new Label("Historial de Particiones");
         lblTitulo.getStyleClass().add("historial-titulo");
 
-        Label lblSub = new Label("Evolución de asignaciones y condensaciones de particiones");
+        Label lblSub = new Label("Evolución de particiones durante la simulación (asignaciones y condensaciones)");
         lblSub.getStyleClass().add("historial-subtitulo");
 
         VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
         infoTitulo.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(infoTitulo, Priority.ALWAYS);
 
-        lblContador = new Label("0 eventos");
+        lblContador = new Label("0 registros");
         lblContador.getStyleClass().add("historial-contador");
 
         HBox barra = new HBox(infoTitulo, lblContador);
@@ -68,24 +69,22 @@ public class HistorialCondensacionView {
 
         tablaEventos = new TableView<>();
         tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tablaEventos.setPlaceholder(new Label("No hay eventos de particiones registrados."));
+        tablaEventos.setPlaceholder(new Label("No hay registros de particiones."));
 
-        TableColumn<RegistroSimulacion.SnapshotParticion, String> colPartRes = new TableColumn<>("Partición");
-        colPartRes.setCellValueFactory(c -> new SimpleStringProperty(
+        TableColumn<RegistroSimulacion.SnapshotParticion, String> colNombre = new TableColumn<>("Nombre de Partición");
+        colNombre.setCellValueFactory(c -> new SimpleStringProperty(
             c.getValue().nombreParticion() != null ? c.getValue().nombreParticion() : "-"
         ));
 
-        TableColumn<RegistroSimulacion.SnapshotParticion, String> colCond = new TableColumn<>("Descripción");
-        colCond.setCellValueFactory(c -> new SimpleStringProperty(
+        TableColumn<RegistroSimulacion.SnapshotParticion, String> colDescripcion = new TableColumn<>("Descripción");
+        colDescripcion.setCellValueFactory(c -> new SimpleStringProperty(
             c.getValue().descripcion() != null ? c.getValue().descripcion() : "-"
         ));
 
         TableColumn<RegistroSimulacion.SnapshotParticion, String> colTamanio = new TableColumn<>("Tamaño");
-        colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
-        ));
+        colTamanio.setCellValueFactory(c -> new SimpleStringProperty(formatearTamanio(c.getValue().tamanio())));
 
-        tablaEventos.getColumns().addAll(colPartRes, colCond, colTamanio);
+        tablaEventos.getColumns().addAll(colNombre, colDescripcion, colTamanio);
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
         VBox contenido = new VBox(12, tablaEventos);
@@ -124,5 +123,9 @@ public class HistorialCondensacionView {
 
     public void cerrar() {
         stage.close();
+    }
+
+    private String formatearTamanio(BigInteger tamanio) {
+        return tamanio != null ? tamanio.toString() : "-";
     }
 }
