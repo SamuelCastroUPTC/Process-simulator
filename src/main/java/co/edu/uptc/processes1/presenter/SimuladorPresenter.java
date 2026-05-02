@@ -177,12 +177,14 @@ public class SimuladorPresenter implements IPresenter {
             return false;
         }
 
-        if (!tiempoSegundos.matches("-?\\d+")) {
+        String tiempoLimpio = tiempoSegundos.replace(".", "").trim();
+
+        if (!tiempoLimpio.matches("-?\\d+")) {
             view.mostrarError("El tiempo debe ser un numero entero valido");
             return false;
         }
 
-        BigInteger tiempo = new BigInteger(tiempoSegundos);
+        BigInteger tiempo = new BigInteger(tiempoLimpio);
         if (tiempo.signum() <= 0) {
             view.mostrarError("El tiempo de ejecucion debe ser mayor a 0");
             return false;

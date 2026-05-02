@@ -33,7 +33,7 @@ public class MotorSimulacion {
 
         int maxIteraciones = procesosOrdenados.size() * 1000;
         int iteracionesGlobales = 0;
-        int contadorParticion = 1;
+        int[] contadorParticion = {1};
         Map<Integer, String> nombreParticionPorProceso = new HashMap<>();
         Map<BigInteger, String> nombrePorDireccion = new HashMap<>();
         Map<String, String> nombreFinal = new HashMap<>();
@@ -83,7 +83,7 @@ public class MotorSimulacion {
                 }
 
                 if (!nombreParticionPorProceso.containsKey(actual.id)) {
-                    String nombreParticion = "PAR" + contadorParticion++;
+                    String nombreParticion = "PAR" + contadorParticion[0]++;
                     nombreParticionPorProceso.put(actual.id, nombreParticion);
                     slotsParticion.add(nombreParticion);
                     tamaniosPorParticion.put(nombreParticion, actual.tamanioMemoria);
@@ -139,76 +139,26 @@ public class MotorSimulacion {
                 } finally {
                     if (termino) {
                         String nombreParticionLiberada = actual.referenciaMemoria;
+                        boolean esUltimoProceso = colaListos.size() == 1;
 
-                        boolean huboCondensacion = memoria.liberar(actual.id);
+                        memoria.liberar(actual.id);
 
                         registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                             actual.nombre, null, actual.tamanioMemoria,
                             "Proceso '" + actual.nombre + "' terminó. Partición "
                                 + nombreParticionLiberada + " libre", memoria);
 
-                        if (nombreParticionLiberada != null && !nombreParticionLiberada.isBlank()) {
-                            slotsLibres.add(nombreParticionLiberada);
-
-                            int posicion = slotsParticion.indexOf(nombreParticionLiberada);
-                            String particionVecina = null;
-                            boolean usarAnterior = false;
-
-                            if (posicion > 0) {
-                                String anterior = slotsParticion.get(posicion - 1);
-                                if (slotsLibres.contains(anterior)) {
-                                    particionVecina = anterior;
-                                    usarAnterior = true;
-                                }
-                            }
-
-                            if (particionVecina == null && posicion >= 0 && posicion < slotsParticion.size() - 1) {
-                                String siguiente = slotsParticion.get(posicion + 1);
-                                if (slotsLibres.contains(siguiente)) {
-                                    particionVecina = siguiente;
-                                    usarAnterior = false;
-                                }
-                            }
-
-                            if (particionVecina != null) {
-                                String particionIzquierda = usarAnterior ? particionVecina : nombreParticionLiberada;
-                                String particionDerecha = usarAnterior ? nombreParticionLiberada : particionVecina;
-
-                                BigInteger tamanioIzquierda = tamaniosPorParticion.getOrDefault(particionIzquierda, BigInteger.ZERO);
-                                BigInteger tamanioDerecha = tamaniosPorParticion.getOrDefault(particionDerecha, BigInteger.ZERO);
-                                BigInteger tamanioResultante = tamanioIzquierda.add(tamanioDerecha);
-                                String nombreNuevo = "PAR" + contadorParticion++;
-                                String nombresUnidosTexto = particionIzquierda + "+" + particionDerecha;
-
-                                registro.registrarCondensacion(new RegistroSimulacion.SnapshotCondensacion(
-                                    nombreNuevo,
-                                    nombresUnidosTexto,
-                                    tamanioResultante
-                                ));
-                                registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
-                                    nombreNuevo,
-                                    "Condensación de " + nombresUnidosTexto,
-                                    tamanioResultante
-                                ));
-
-                                registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
-                                    nombreNuevo, null, tamanioResultante,
-                                    "Condensación: " + nombresUnidosTexto + " → " + nombreNuevo, memoria);
-
-                                int indiceIzquierda = slotsParticion.indexOf(particionIzquierda);
-                                int indiceDerecha = slotsParticion.indexOf(particionDerecha);
-                                int indiceReemplazo = Math.min(indiceIzquierda, indiceDerecha);
-                                int indiceEliminacion = Math.max(indiceIzquierda, indiceDerecha);
-
-                                slotsParticion.set(indiceReemplazo, nombreNuevo);
-                                slotsParticion.remove(indiceEliminacion);
-
-                                slotsLibres.remove(particionIzquierda);
-                                slotsLibres.remove(particionDerecha);
-                                slotsLibres.add(nombreNuevo);
-
-                                tamaniosPorParticion.put(nombreNuevo, tamanioResultante);
-                            }
+                        if (!esUltimoProceso) {
+                            intentarCondensar(
+                                nombreParticionLiberada,
+                                slotsParticion,
+                                slotsLibres,
+                                tamaniosPorParticion,
+                                registro,
+                                memoria,
+                                contadorParticion,
+                                false
+                            );
                         }
                     } else {
                         memoria.liberarSinCondensar(actual.id);
@@ -289,12 +239,96 @@ public class MotorSimulacion {
             .orElse(BigInteger.ZERO);
     }
 
-    private BigInteger obtenerDireccionProceso(MemoriaVariable memoria, int idProceso) {
-        return memoria.getBloquesOcupados().stream()
-            .filter(b -> b.getIdProceso() == idProceso)
-            .map(b -> b.getDireccionInicio())
-            .findFirst()
-            .orElse(null);
+    private void intentarCondensar(
+        String nombreParticionLiberada,
+        List<String> slotsParticion,
+        Set<String> slotsLibres,
+        Map<String, BigInteger> tamaniosPorParticion,
+        RegistroSimulacion registro,
+        MemoriaVariable memoria,
+        int[] contadorParticion,
+        boolean esUltimoProceso) {
+
+        if (nombreParticionLiberada == null || nombreParticionLiberada.isBlank()) {
+            return;
+        }
+
+        slotsLibres.add(nombreParticionLiberada);
+
+        int posicion = slotsParticion.indexOf(nombreParticionLiberada);
+        if (posicion < 0) {
+            return;
+        }
+
+        String particionIzquierda = null;
+        String particionDerecha = null;
+
+        if (posicion > 0) {
+            String anterior = slotsParticion.get(posicion - 1);
+            if (slotsLibres.contains(anterior)) {
+                particionIzquierda = anterior;
+                particionDerecha = nombreParticionLiberada;
+            }
+        }
+
+        if (particionIzquierda == null && posicion < slotsParticion.size() - 1) {
+            String siguiente = slotsParticion.get(posicion + 1);
+            if (slotsLibres.contains(siguiente)) {
+                particionIzquierda = nombreParticionLiberada;
+                particionDerecha = siguiente;
+            }
+        }
+
+        if (particionIzquierda == null || particionDerecha == null) {
+            return;
+        }
+
+        BigInteger tamanioIzquierda = tamaniosPorParticion.getOrDefault(particionIzquierda, BigInteger.ZERO);
+        BigInteger tamanioDerecha = tamaniosPorParticion.getOrDefault(particionDerecha, BigInteger.ZERO);
+        BigInteger tamanioResultante = tamanioIzquierda.add(tamanioDerecha);
+        String nombreNuevo = "PAR" + contadorParticion[0]++;
+        String nombresUnidosTexto = particionIzquierda + "+" + particionDerecha;
+
+        registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+            nombreNuevo,
+            "Condensación de " + nombresUnidosTexto,
+            tamanioResultante
+        ));
+        registro.registrarCondensacion(new RegistroSimulacion.SnapshotCondensacion(
+            nombreNuevo,
+            nombresUnidosTexto,
+            tamanioResultante
+        ));
+        registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
+            nombreNuevo, null, tamanioResultante,
+            "Condensación: " + nombresUnidosTexto + " → " + nombreNuevo, memoria);
+
+        int indiceIzquierda = slotsParticion.indexOf(particionIzquierda);
+        int indiceDerecha = slotsParticion.indexOf(particionDerecha);
+        int indiceReemplazo = Math.min(indiceIzquierda, indiceDerecha);
+        int indiceEliminacion = Math.max(indiceIzquierda, indiceDerecha);
+
+        slotsParticion.set(indiceReemplazo, nombreNuevo);
+        slotsParticion.remove(indiceEliminacion);
+
+        slotsLibres.remove(particionIzquierda);
+        slotsLibres.remove(particionDerecha);
+        slotsLibres.add(nombreNuevo);
+
+        tamaniosPorParticion.put(nombreNuevo, tamanioResultante);
+
+        if (!esUltimoProceso) {
+            intentarCondensar(
+                nombreNuevo,
+                slotsParticion,
+                slotsLibres,
+                tamaniosPorParticion,
+                registro,
+                memoria,
+                contadorParticion,
+                false
+            );
+        }
     }
 
     private static final class ProcesoRuntime {
