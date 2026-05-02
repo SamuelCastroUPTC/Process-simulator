@@ -66,8 +66,8 @@ public class MainView implements IView {
     // --- CAMBIO A: Array ESTADOS_HISTORIAL actualizado con los estados nuevos ---
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO, "Despachar", "Procesador",
-        "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Finalización",
-        "Particiones",
+        "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Salida",
+        "Finalización de Particiones",
         RegistroSimulacion.ASIGNACION,       // nuevo
         RegistroSimulacion.LIBERACION,       // nuevo
         RegistroSimulacion.CONDENSACION      // nuevo
@@ -441,11 +441,11 @@ public class MainView implements IView {
     // --- CAMBIO C: Redirigir los eventos de memoria al nuevo método del presenter ---
     private void notificarVerHistorial(String estado) {
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
-            if ("Particiones".equals(estado)) {
+            if ("Finalización de Particiones".equals(estado)) {
                 p.onVerHistorialParticiones();
                 return;
             }
-            if ("Finalización".equals(estado) || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
+            if ("Salida".equals(estado) || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
                 p.onVerHistorial(RegistroSimulacion.FINALIZADO);
                 return;
             }

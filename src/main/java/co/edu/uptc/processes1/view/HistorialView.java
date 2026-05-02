@@ -278,17 +278,20 @@ public class HistorialView {
         boolean esFinalizacion = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
             || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
 
-        if (esFinalizacion && usosParticion != null && !usosParticion.isEmpty()) {
-            Map<String, List<RegistroSimulacion.UsoParticion>> porParticion = usosParticion.stream()
+        if (esFinalizacion) {
+            Map<String, List<RegistroSimulacion.SnapshotProceso>> procesosPorParticion = datos.stream()
+                .filter(proceso -> proceso != null
+                    && proceso.nombreParticion() != null
+                    && !proceso.nombreParticion().isBlank())
                 .collect(Collectors.groupingBy(
-                    RegistroSimulacion.UsoParticion::nombreParticion,
+                    RegistroSimulacion.SnapshotProceso::nombreParticion,
                     LinkedHashMap::new,
                     Collectors.toList()
                 ));
 
-            porParticion.forEach((nombreParticion, usos) -> {
+            procesosPorParticion.forEach((nombreParticion, procesosParticion) -> {
                 Tab tabParticion = new Tab(nombreParticion);
-                VBox contenidoParticion = construirContenidoParticionFinal(nombreParticion, usos);
+                VBox contenidoParticion = construirContenidoParticionFinal(nombreParticion, procesosParticion, usosParticion);
                 tabParticion.setContent(contenidoParticion);
                 tabParticion.setClosable(false);
                 tabPane.getTabs().add(tabParticion);
@@ -358,37 +361,61 @@ public class HistorialView {
         }
     }
 
-    private VBox construirContenidoParticionFinal(String nombreParticion, List<RegistroSimulacion.UsoParticion> usos) {
+    private VBox construirContenidoParticionFinal(
+        String nombreParticion,
+        List<RegistroSimulacion.SnapshotProceso> procesos,
+        List<RegistroSimulacion.UsoParticion> usosParticion) {
         Label lblTituloParticion = new Label("Partición: " + nombreParticion);
         lblTituloParticion.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #3D3D3D;");
 
-        BigInteger tiempoTotal = BigInteger.ZERO;
-        for (RegistroSimulacion.UsoParticion uso : usos) {
-            if (uso != null && uso.tiempoCpu() != null) {
-                tiempoTotal = tiempoTotal.add(uso.tiempoCpu());
-            }
-        }
-        Label lblTotal = new Label("Tiempo total de ejecución: " + tiempoTotal.divide(BigInteger.valueOf(1000L)) + " s");
-        lblTotal.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #7B9EA6;");
+        TableView<FilaParticionFinal> tabla = new TableView<>();
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.setPlaceholder(new Label("No hay procesos registrados para esta partición."));
 
-        List<String> pasosExpandidos = new ArrayList<>();
-        for (RegistroSimulacion.UsoParticion uso : usos) {
-            if (uso == null || uso.nombreProceso() == null || uso.nombreProceso().isBlank()) {
+        TableColumn<FilaParticionFinal, String> colProceso = new TableColumn<>("Proceso");
+        colProceso.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().nombreProceso()));
+
+        TableColumn<FilaParticionFinal, String> colTamanio = new TableColumn<>("Tamaño");
+        colTamanio.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().tamanio()));
+
+        TableColumn<FilaParticionFinal, String> colTiempo = new TableColumn<>("Tiempo total");
+        colTiempo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().tiempoTotal()));
+
+        tabla.getColumns().addAll(colProceso, colTamanio, colTiempo);
+
+        List<FilaParticionFinal> filas = new ArrayList<>();
+        for (RegistroSimulacion.SnapshotProceso proceso : procesos) {
+            if (proceso == null || proceso.nombreParticion() == null || proceso.nombreParticion().isBlank()) {
                 continue;
             }
-            pasosExpandidos.add(
-                uso.nombreProceso() + " → " + uso.nombreParticion()
-                    + " (" + uso.tiempoCpu().divide(BigInteger.valueOf(1000L)) + "s)"
-            );
+
+            BigInteger tiempoTotal = BigInteger.ZERO;
+            if (usosParticion != null) {
+                for (RegistroSimulacion.UsoParticion uso : usosParticion) {
+                    if (uso == null
+                        || uso.nombreParticion() == null
+                        || !nombreParticion.equals(uso.nombreParticion())
+                        || uso.nombreProceso() == null
+                        || !proceso.nombre().equals(uso.nombreProceso())
+                        || uso.tiempoCpu() == null) {
+                        continue;
+                    }
+                    tiempoTotal = tiempoTotal.add(uso.tiempoCpu());
+                }
+            }
+
+            filas.add(new FilaParticionFinal(
+                proceso.nombre(),
+                proceso.tamanioMemoria() != null ? formatearTamanio(proceso.tamanioMemoria()) : "-",
+                formatearTiempo(tiempoTotal)
+            ));
         }
 
-        ListView<String> lista = new ListView<>();
-        lista.setPlaceholder(new Label("No hay procesos registrados para esta partición."));
-        lista.setItems(FXCollections.observableArrayList(pasosExpandidos));
+        tabla.setItems(FXCollections.observableArrayList(filas));
 
-        VBox contenedor = new VBox(10, lblTituloParticion, lblTotal, lista);
+        VBox contenedor = new VBox(10, lblTituloParticion, tabla);
         contenedor.setPadding(new Insets(12, 0, 0, 0));
-        VBox.setVgrow(lista, Priority.ALWAYS);
+        VBox.setVgrow(tabla, Priority.ALWAYS);
         return contenedor;
     }
 
@@ -418,5 +445,29 @@ public class HistorialView {
         tabla.setMaxHeight(Double.MAX_VALUE);
         wrapper.setStyle("-fx-background-color: transparent;");
         return wrapper;
+    }
+
+    private String formatearTamanio(BigInteger tamanio) {
+        return tamanio != null ? tamanio.toString() : "-";
+    }
+
+    private String formatearTiempo(BigInteger tiempo) {
+        return tiempo != null ? tiempo.divide(BigInteger.valueOf(1000L)).toString() : "-";
+    }
+
+    private static final class FilaParticionFinal {
+        private final String nombreProceso;
+        private final String tamanio;
+        private final String tiempoTotal;
+
+        private FilaParticionFinal(String nombreProceso, String tamanio, String tiempoTotal) {
+            this.nombreProceso = nombreProceso;
+            this.tamanio = tamanio;
+            this.tiempoTotal = tiempoTotal;
+        }
+
+        private String nombreProceso() { return nombreProceso; }
+        private String tamanio() { return tamanio; }
+        private String tiempoTotal() { return tiempoTotal; }
     }
 }

@@ -44,10 +44,10 @@ public class HistorialParticionesView {
         stage.setWidth(bounds.getWidth());
         stage.setHeight(bounds.getHeight());
 
-        Label lblTitulo = new Label("Historial de Particiones");
+        Label lblTitulo = new Label("Finalización de Particiones");
         lblTitulo.getStyleClass().add("historial-titulo");
 
-        Label lblSub = new Label("Evolución de particiones durante la simulación (asignaciones y condensaciones)");
+        Label lblSub = new Label("Particiones asignadas y condensaciones durante la simulación");
         lblSub.getStyleClass().add("historial-subtitulo");
 
         VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
@@ -76,15 +76,10 @@ public class HistorialParticionesView {
             c.getValue().nombreParticion() != null ? c.getValue().nombreParticion() : "-"
         ));
 
-        TableColumn<RegistroSimulacion.SnapshotParticion, String> colDescripcion = new TableColumn<>("Descripción");
-        colDescripcion.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().descripcion() != null ? c.getValue().descripcion() : "-"
-        ));
-
         TableColumn<RegistroSimulacion.SnapshotParticion, String> colTamanio = new TableColumn<>("Tamaño");
         colTamanio.setCellValueFactory(c -> new SimpleStringProperty(formatearTamanio(c.getValue().tamanio())));
 
-        tablaEventos.getColumns().addAll(colNombre, colDescripcion, colTamanio);
+        tablaEventos.getColumns().addAll(colNombre, colTamanio);
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
         VBox contenido = new VBox(12, tablaEventos);

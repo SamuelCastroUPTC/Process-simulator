@@ -75,7 +75,10 @@ public class HistorialMemoriaView {
         tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaEventos.setPlaceholder(new Label("No hay eventos registrados."));
 
-        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>("Proceso");
+        String encabezadoProceso = this.evento.equals(RegistroSimulacion.CONDENSACION)
+            ? "Partición Resultante"
+            : "Proceso";
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>(encabezadoProceso);
         colProceso.setCellValueFactory(c -> new SimpleStringProperty(
             c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
         ));
