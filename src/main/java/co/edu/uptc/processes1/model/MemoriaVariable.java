@@ -7,6 +7,8 @@ import java.util.List;
 
 public class MemoriaVariable {
 
+    public record ResultadoAsignacion(BigInteger direccion, boolean compactoAntes) {}
+
     private final BigInteger tamanioTotal;
     private final List<BloqueMemoria> bloquesOcupados;
     private final List<HuecoMemoria> huecos;
@@ -18,7 +20,9 @@ public class MemoriaVariable {
         huecos.add(new HuecoMemoria(BigInteger.ZERO, tamanioTotal));
     }
 
-    public BigInteger asignar(int idProceso, String nombreProceso, BigInteger tamanio) {
+    public ResultadoAsignacion asignar(int idProceso, String nombreProceso, BigInteger tamanio) {
+        boolean compactoAntes = false;
+        
         for (int i = 0; i < huecos.size(); i++) {
             HuecoMemoria hueco = huecos.get(i);
             if (hueco.getTamanio().compareTo(tamanio) >= 0) {
@@ -31,10 +35,63 @@ public class MemoriaVariable {
                     hueco.setDireccionInicio(hueco.getDireccionInicio().add(tamanio));
                     hueco.setTamanio(hueco.getTamanio().subtract(tamanio));
                 }
-                return direccionAsignada;
+                return new ResultadoAsignacion(direccionAsignada, compactoAntes);
             }
         }
-        return null;
+
+        // Si llegamos aquí, no hay hueco individual suficiente.
+        // Verificamos si hay espacio libre total suficiente para compactar.
+        if (getEspacioLibreTotal().compareTo(tamanio) >= 0) {
+            compactar();
+            // Intentamos asignar nuevamente después de compactar
+            for (int i = 0; i < huecos.size(); i++) {
+                HuecoMemoria hueco = huecos.get(i);
+                if (hueco.getTamanio().compareTo(tamanio) >= 0) {
+                    BigInteger direccionAsignada = hueco.getDireccionInicio();
+                    bloquesOcupados.add(new BloqueMemoria(idProceso, nombreProceso, direccionAsignada, tamanio));
+
+                    if (hueco.getTamanio().compareTo(tamanio) == 0) {
+                        huecos.remove(i);
+                    } else {
+                        hueco.setDireccionInicio(hueco.getDireccionInicio().add(tamanio));
+                        hueco.setTamanio(hueco.getTamanio().subtract(tamanio));
+                    }
+                    return new ResultadoAsignacion(direccionAsignada, true);
+                }
+            }
+        }
+
+        return new ResultadoAsignacion(null, false);
+    }
+
+    public void compactar() {
+        // a) Ordena bloquesOcupados por direccionInicio ascendente.
+        List<BloqueMemoria> ordenados = bloquesOcupados.stream()
+            .sorted(Comparator.comparing(BloqueMemoria::getDireccionInicio))
+            .toList();
+
+        // b) Reasigna direcciones de forma contigua empezando desde BigInteger.ZERO
+        BigInteger cursor = BigInteger.ZERO;
+        List<BloqueMemoria> bloquesCompactados = new ArrayList<>();
+        for (BloqueMemoria bloque : ordenados) {
+            BloqueMemoria nuevoBloque = new BloqueMemoria(
+                bloque.getIdProceso(),
+                bloque.getNombreProceso(),
+                cursor,
+                bloque.getTamanio()
+            );
+            bloquesCompactados.add(nuevoBloque);
+            cursor = cursor.add(bloque.getTamanio());
+        }
+        bloquesOcupados.clear();
+        bloquesOcupados.addAll(bloquesCompactados);
+
+        // c) Recalcula huecos
+        huecos.clear();
+        BigInteger espacioOcupado = cursor;
+        if (espacioOcupado.compareTo(tamanioTotal) < 0) {
+            huecos.add(new HuecoMemoria(espacioOcupado, tamanioTotal.subtract(espacioOcupado)));
+        }
     }
 
     public boolean liberar(int idProceso) {

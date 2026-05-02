@@ -70,7 +70,8 @@ public class MainView implements IView {
         "Finalización de Particiones",
         RegistroSimulacion.ASIGNACION,       // nuevo
         RegistroSimulacion.LIBERACION,       // nuevo
-        RegistroSimulacion.CONDENSACION      // nuevo
+        RegistroSimulacion.CONDENSACION,     // nuevo
+        RegistroSimulacion.COMPACTACION      // nuevo
     };
 
     public MainView(Stage stage) {
@@ -451,7 +452,8 @@ public class MainView implements IView {
             }
             if (RegistroSimulacion.ASIGNACION.equals(estado)
                     || RegistroSimulacion.LIBERACION.equals(estado)
-                    || RegistroSimulacion.CONDENSACION.equals(estado)) {
+                    || RegistroSimulacion.CONDENSACION.equals(estado)
+                    || RegistroSimulacion.COMPACTACION.equals(estado)) {
                 p.onVerHistorialMemoria(estado);
             } else {
                 p.onVerHistorial(estado);

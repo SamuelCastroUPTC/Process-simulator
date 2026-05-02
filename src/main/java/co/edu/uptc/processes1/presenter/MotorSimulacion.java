@@ -75,11 +75,25 @@ public class MotorSimulacion {
 
                 ProcesoRuntime actual = colaListos.get(i);
 
-                BigInteger direccionInicio = memoria.asignar(actual.id, actual.nombre, actual.tamanioMemoria);
-                if (direccionInicio == null) {
+                BigInteger espacioLibreAntesDeAsignar = memoria.getEspacioLibreTotal();
+                MemoriaVariable.ResultadoAsignacion resultado = memoria.asignar(actual.id, actual.nombre, actual.tamanioMemoria);
+                if (resultado.direccion() == null) {
                     registrarEstado(registro, RegistroSimulacion.LISTO, actual);
                     i++;
                     continue;
+                }
+
+                BigInteger direccionInicio = resultado.direccion();
+
+                // Si ocurrió compactación antes de la asignación, registrarlo
+                if (resultado.compactoAntes()) {
+                    registrarEventoMemoria(registro, RegistroSimulacion.COMPACTACION,
+                        actual.nombre,
+                        BigInteger.ZERO,
+                        espacioLibreAntesDeAsignar,
+                        "Compactación ejecutada: " + espacioLibreAntesDeAsignar
+                            + " bytes libres consolidados para alojar '" + actual.nombre + "'",
+                        memoria);
                 }
 
                 if (!nombreParticionPorProceso.containsKey(actual.id)) {
@@ -248,6 +262,10 @@ public class MotorSimulacion {
         MemoriaVariable memoria,
         int[] contadorParticion,
         boolean esUltimoProceso) {
+
+        if (esUltimoProceso) {
+            return;
+        }
 
         if (nombreParticionLiberada == null || nombreParticionLiberada.isBlank()) {
             return;

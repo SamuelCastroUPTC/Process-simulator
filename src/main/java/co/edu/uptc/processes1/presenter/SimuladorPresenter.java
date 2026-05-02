@@ -118,8 +118,8 @@ public class SimuladorPresenter implements IPresenter {
     @Override
     public void onCargarProceso() {
         String nombre = view.getNombreProceso();
-        String tiempoStr = view.getTiempoProceso().replace(".", "").trim();
-        String tamanioMemoriaStr = view.getTamanioMemoria().replace(".", "");
+        String tiempoStr = limpiarNumero(view.getTiempoProceso());
+        String tamanioMemoriaStr = limpiarNumero(view.getTamanioMemoria());
 
         if (nombre.isBlank() || tiempoStr.isBlank() || tamanioMemoriaStr.isBlank()) {
             view.mostrarError("Por favor, complete todos los campos obligatorios");
@@ -177,7 +177,7 @@ public class SimuladorPresenter implements IPresenter {
             return false;
         }
 
-        String tiempoLimpio = tiempoSegundos.replace(".", "").trim();
+        String tiempoLimpio = limpiarNumero(tiempoSegundos);
 
         if (!tiempoLimpio.matches("-?\\d+")) {
             view.mostrarError("El tiempo debe ser un numero entero valido");
@@ -190,7 +190,7 @@ public class SimuladorPresenter implements IPresenter {
             return false;
         }
 
-        String tamanioLimpio = tamanioMemoria.replace(".", "").trim();
+        String tamanioLimpio = limpiarNumero(tamanioMemoria);
         if (!tamanioLimpio.matches("\\d+")) {
             view.mostrarError("El tamano de memoria debe ser un numero entero mayor a 0");
             return false;
@@ -268,6 +268,10 @@ public class SimuladorPresenter implements IPresenter {
             case "finalizacion de particiones", "finalización de particiones", "particiones" -> RegistroSimulacion.HISTORIAL_PARTICIONES;
             default -> estado;
         };
+    }
+
+    private String limpiarNumero(String s) {
+        return (s == null) ? "" : s.replaceAll("[^\\d]", "").trim();
     }
 
 

@@ -301,8 +301,12 @@ public class FormProcces {
      // ── Getters ───────────────────────────────────────────────────────────────
 
     public String  getNombre()            { return txtNombre.getText().trim(); }
-    public String  getTiempo()            { return txtTiempo.getText().trim(); }
-    public String  getTamanioMemoria()    { return txtTamanioMemoria.getText().replaceAll("\\.", "").trim(); }
+    public String  getTiempo()            { return sanitizarNumero(txtTiempo.getText()); }
+    public String  getTamanioMemoria()    { return sanitizarNumero(txtTamanioMemoria.getText()); }
+
+    private static String sanitizarNumero(String raw) {
+        return (raw == null || raw.isEmpty()) ? "" : raw.replaceAll("[^\\d]", "").trim();
+    }
 
     public void setProcesosCargados(List<Proceso> procesos) {
         List<String> items = new ArrayList<>();

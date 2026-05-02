@@ -78,6 +78,7 @@ public class RegistroSimulacion {
     public static final String ASIGNACION   = "Asignación";
     public static final String LIBERACION   = "Liberación";
     public static final String CONDENSACION = "Condensación";
+    public static final String COMPACTACION = "Compactación";
 
     private static final List<String> ESTADOS = List.of(
             INICIO, DESPACHAR, PROCESADOR, EXPIRACION_TIEMPO,
@@ -86,7 +87,7 @@ public class RegistroSimulacion {
 
     // ¡NUEVA LISTA! Separada para los estados de memoria
     private static final List<String> ESTADOS_MEMORIA = List.of(
-            ASIGNACION, LIBERACION, CONDENSACION
+            ASIGNACION, LIBERACION, CONDENSACION, COMPACTACION
     );
 
     // ==========================================
