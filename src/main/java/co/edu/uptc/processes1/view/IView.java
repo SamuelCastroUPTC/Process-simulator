@@ -57,5 +57,7 @@ public interface IView {
 
     void mostrarHistorialMemoria(String evento, List<RegistroSimulacion.SnapshotMemoria> datos);
 
-    void mostrarHistorialParticiones(List<RegistroSimulacion.SnapshotParticion> datos);
+    void mostrarHistorialCondensacion(List<RegistroSimulacion.SnapshotParticion> datos);
+
+    void mostrarHistorialCompactacion(List<RegistroSimulacion.SnapshotMemoria> datos);
 }

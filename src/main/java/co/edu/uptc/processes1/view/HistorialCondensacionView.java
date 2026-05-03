@@ -8,6 +8,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
@@ -25,6 +27,7 @@ public class HistorialCondensacionView {
     private Stage stage;
     private Label lblContador;
     private TableView<RegistroSimulacion.SnapshotParticion> tablaEventos;
+    private TableView<RegistroSimulacion.SnapshotMemoria> tablaCompactacion;
 
     private double dragOffsetX;
     private double dragOffsetY;
@@ -88,7 +91,46 @@ public class HistorialCondensacionView {
         tablaEventos.getColumns().addAll(colPartRes, colCond, colTamanio);
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
-        VBox contenido = new VBox(12, tablaEventos);
+        tablaCompactacion = new TableView<>();
+        tablaCompactacion.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tablaCompactacion.setPlaceholder(new Label("No hay compactaciones registradas."));
+
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colResultante =
+            new TableColumn<>("Partición Resultante");
+        colResultante.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
+        ));
+
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion =
+            new TableColumn<>("Dirección Inicio");
+        colDireccion.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
+        ));
+
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamResultante =
+            new TableColumn<>("Tamaño");
+        colTamResultante.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
+        ));
+
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDetalle =
+            new TableColumn<>("Detalle");
+        colDetalle.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().detalle() != null ? c.getValue().detalle() : "-"
+        ));
+
+        tablaCompactacion.getColumns().addAll(colResultante, colDireccion, colTamResultante, colDetalle);
+        VBox.setVgrow(tablaCompactacion, Priority.ALWAYS);
+
+        Tab tabParticiones = new Tab("Particiones", tablaEventos);
+        tabParticiones.setClosable(false);
+        Tab tabCompactacion = new Tab("Compactación", tablaCompactacion);
+        tabCompactacion.setClosable(false);
+
+        TabPane tabs = new TabPane(tabParticiones, tabCompactacion);
+        VBox.setVgrow(tabs, Priority.ALWAYS);
+
+        VBox contenido = new VBox(12, tabs);
         contenido.setPadding(new Insets(16, 36, 0, 36));
         contenido.setStyle("-fx-background-color: #F0F7F9;");
         VBox.setVgrow(contenido, Priority.ALWAYS);
@@ -118,6 +160,12 @@ public class HistorialCondensacionView {
         tablaEventos.setItems(FXCollections.observableArrayList(datos));
         int n = datos.size();
         lblContador.setText(n + (n == 1 ? " registro" : " registros"));
+        stage.show();
+        stage.toFront();
+    }
+
+    public void mostrarCompactacion(List<RegistroSimulacion.SnapshotMemoria> datos) {
+        tablaCompactacion.setItems(FXCollections.observableArrayList(datos));
         stage.show();
         stage.toFront();
     }

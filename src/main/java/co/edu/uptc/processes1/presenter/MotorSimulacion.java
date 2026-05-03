@@ -273,27 +273,18 @@ public class MotorSimulacion {
 
         slotsLibres.add(nombreParticionLiberada);
 
-        int posicion = slotsParticion.indexOf(nombreParticionLiberada);
-        if (posicion < 0) {
+        if (slotsLibres.size() < 2) {
             return;
         }
 
         String particionIzquierda = null;
         String particionDerecha = null;
-
-        if (posicion > 0) {
-            String anterior = slotsParticion.get(posicion - 1);
-            if (slotsLibres.contains(anterior)) {
-                particionIzquierda = anterior;
-                particionDerecha = nombreParticionLiberada;
-            }
-        }
-
-        if (particionIzquierda == null && posicion < slotsParticion.size() - 1) {
-            String siguiente = slotsParticion.get(posicion + 1);
-            if (slotsLibres.contains(siguiente)) {
-                particionIzquierda = nombreParticionLiberada;
-                particionDerecha = siguiente;
+        for (String particionLibre : slotsLibres) {
+            if (particionIzquierda == null) {
+                particionIzquierda = particionLibre;
+            } else {
+                particionDerecha = particionLibre;
+                break;
             }
         }
 

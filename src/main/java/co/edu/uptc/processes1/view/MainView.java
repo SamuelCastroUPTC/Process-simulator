@@ -56,7 +56,7 @@ public class MainView implements IView {
     
     // --- CAMBIO A: Nuevo mapa de ventanas de memoria ---
     private final Map<String, HistorialMemoriaView> ventanasMemoria = new HashMap<>();
-    private HistorialParticionesView ventanaParticiones;
+    private HistorialCondensacionView ventanaCondensacion;
 
     private Object presenter;
 
@@ -135,6 +135,9 @@ public class MainView implements IView {
         btnSalir.setOnAction(e -> {
             ventanasHistorial.values().forEach(HistorialView::cerrar);
             ventanasMemoria.values().forEach(HistorialMemoriaView::cerrar); // Opcional: para limpiar también estas ventanas
+            if (ventanaCondensacion != null) {
+                ventanaCondensacion.cerrar();
+            }
             stage.close();
         });
 
@@ -631,11 +634,19 @@ public class MainView implements IView {
     }
 
     @Override
-    public void mostrarHistorialParticiones(List<RegistroSimulacion.SnapshotParticion> datos) {
-        if (ventanaParticiones == null) {
-            ventanaParticiones = new HistorialParticionesView();
+    public void mostrarHistorialCondensacion(List<RegistroSimulacion.SnapshotParticion> datos) {
+        if (ventanaCondensacion == null) {
+            ventanaCondensacion = new HistorialCondensacionView();
         }
-        ventanaParticiones.mostrarConDatos(datos);
+        ventanaCondensacion.mostrarConDatos(datos);
+    }
+
+    @Override
+    public void mostrarHistorialCompactacion(List<RegistroSimulacion.SnapshotMemoria> datos) {
+        if (ventanaCondensacion == null) {
+            ventanaCondensacion = new HistorialCondensacionView();
+        }
+        ventanaCondensacion.mostrarCompactacion(datos);
     }
 
     private boolean esEstadoFinalizacion(String estado) {
