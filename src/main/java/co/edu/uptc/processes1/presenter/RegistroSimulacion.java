@@ -64,8 +64,7 @@ public class RegistroSimulacion {
     // ==========================================
     // 2. CONSTANTES DE ESTADOS
     // ==========================================
-    public static final String LISTO = "Listo";
-    public static final String INICIO = LISTO;
+    public static final String INICIO = "Listo";
     public static final String DESPACHAR = "Despachar";
     public static final String PROCESADOR = "Procesador";
     public static final String EXPIRACION_TIEMPO = "Expiracion de tiempo";
@@ -79,16 +78,6 @@ public class RegistroSimulacion {
     public static final String LIBERACION   = "Liberación";
     public static final String CONDENSACION = "Condensación";
     public static final String COMPACTACION = "Compactación";
-
-    private static final List<String> ESTADOS = List.of(
-            INICIO, DESPACHAR, PROCESADOR, EXPIRACION_TIEMPO,
-            NO_EJECUTADO, FINALIZADO, FINALIZACION_PARTICIONES
-    );
-
-    // ¡NUEVA LISTA! Separada para los estados de memoria
-    private static final List<String> ESTADOS_MEMORIA = List.of(
-            ASIGNACION, LIBERACION, CONDENSACION, COMPACTACION
-    );
 
     // ==========================================
     // 3. MAPAS DE HISTORIAL (Variables de clase)
@@ -113,10 +102,10 @@ public class RegistroSimulacion {
         this.historialParticiones = new ArrayList<>();
         this.historialMemoria = new LinkedHashMap<>(); // Inicializamos el mapa nuevo
         
-        // ¡NUEVO CICLO! Inicializamos las listas vacías para los eventos de memoria
-        for (String estado : ESTADOS_MEMORIA) {
-            historialMemoria.put(estado, new ArrayList<>());
-        }
+        historialMemoria.put(ASIGNACION, new ArrayList<>());
+        historialMemoria.put(LIBERACION, new ArrayList<>());
+        historialMemoria.put(CONDENSACION, new ArrayList<>());
+        historialMemoria.put(COMPACTACION, new ArrayList<>());
     }
 
     // ==========================================

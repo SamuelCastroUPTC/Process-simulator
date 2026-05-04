@@ -63,9 +63,6 @@ public class HistorialView {
      */
     private TabPane tabPane;
 
-    /** Referencia a la tabla de la pestaña "Todos", para actualizar sus datos. */
-    private TableView<RegistroSimulacion.SnapshotProceso> tablaTodos;
-
     private final String estado;
 
     // Para drag sin bordes
@@ -124,12 +121,7 @@ public class HistorialView {
         });
 
         // ── CAMBIO 1: TabPane en lugar de una sola tabla ──────────────────────
-        tablaTodos = crearTablaParaEstado();
-
-        Tab tabTodos = new Tab("Todos", envolverTabla(tablaTodos));
-        tabTodos.setClosable(false);
-
-        tabPane = new TabPane(tabTodos);
+        tabPane = new TabPane();
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         tabPane.setStyle("-fx-background-color: transparent;");
         VBox.setVgrow(tabPane, Priority.ALWAYS);   // ocupa todo el espacio disponible
@@ -273,7 +265,6 @@ public class HistorialView {
         tabTodos.setContent(envolverTabla(tablaTodosNueva));
         tabTodos.setClosable(false);
         tabPane.getTabs().add(tabTodos);
-        this.tablaTodos = tablaTodosNueva;
 
         boolean esFinalizacion = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
             || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
@@ -417,14 +408,6 @@ public class HistorialView {
         contenedor.setPadding(new Insets(12, 0, 0, 0));
         VBox.setVgrow(tabla, Priority.ALWAYS);
         return contenedor;
-    }
-
-    /**
-     * Elimina todas las pestañas de particiones, dejando solo "Todos".
-     * Útil para limpiar el estado antes de una nueva simulación.
-     */
-    public void limpiarTabsParticiones() {
-        tabPane.getTabs().removeIf(t -> !"Todos".equals(t.getText()));
     }
 
     public void cerrar() {

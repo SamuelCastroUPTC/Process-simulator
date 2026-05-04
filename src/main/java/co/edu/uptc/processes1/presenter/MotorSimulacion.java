@@ -7,8 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import co.edu.uptc.processes1.model.HuecoMemoria;
 import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
@@ -36,7 +34,6 @@ public class MotorSimulacion {
         int[] contadorParticion = {1};
         Map<Integer, String> nombreParticionPorProceso = new HashMap<>();
         Map<BigInteger, String> nombrePorDireccion = new HashMap<>();
-        Map<String, String> nombreFinal = new HashMap<>();
         List<String> slotsParticion = new ArrayList<>();
         Set<String> slotsLibres = new HashSet<>();
         Map<String, BigInteger> tamaniosPorParticion = new HashMap<>();
@@ -55,7 +52,7 @@ public class MotorSimulacion {
         }
 
         for (ProcesoRuntime runtime : colaListos) {
-            registrarEstado(registro, RegistroSimulacion.LISTO, runtime);
+            registrarEstado(registro, RegistroSimulacion.INICIO, runtime);
         }
 
         while (!colaListos.isEmpty()) {
@@ -78,7 +75,7 @@ public class MotorSimulacion {
                 BigInteger espacioLibreAntesDeAsignar = memoria.getEspacioLibreTotal();
                 MemoriaVariable.ResultadoAsignacion resultado = memoria.asignar(actual.id, actual.nombre, actual.tamanioMemoria);
                 if (resultado.direccion() == null) {
-                    registrarEstado(registro, RegistroSimulacion.LISTO, actual);
+                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
                     i++;
                     continue;
                 }
@@ -145,6 +142,11 @@ public class MotorSimulacion {
                         snapshotFinal.setEstadoActual(RegistroSimulacion.FINALIZADO);
                         snapshotFinal.setParticion(new Particion(-1, actual.referenciaMemoria, actual.tamanioMemoria));
                         registro.registrar(RegistroSimulacion.FINALIZADO, snapshotFinal);
+                        registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                            actual.referenciaMemoria,
+                            "Finalizada por proceso '" + actual.nombre + "'",
+                            actual.tamanioMemoria
+                        ));
                         termino = true;
                     } else {
                         registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
@@ -190,7 +192,7 @@ public class MotorSimulacion {
                 if (termino) {
                     colaListos.remove(i);
                 } else {
-                    registrarEstado(registro, RegistroSimulacion.LISTO, actual);
+                    registrarEstado(registro, RegistroSimulacion.INICIO, actual);
                     i++;
                 }
             }

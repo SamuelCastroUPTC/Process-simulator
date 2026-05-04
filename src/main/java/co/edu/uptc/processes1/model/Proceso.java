@@ -54,10 +54,6 @@ public class Proceso {
         return tiempoRestante.get();
     }
 
-    public BigInteger getTiempo() {
-        return getTiempoRestante();
-    }
-
     public BigInteger getTamanioMemoria() {
         return tamanioMemoria.get();
     }
@@ -72,10 +68,6 @@ public class Proceso {
 
     public void setTiempoRestante(BigInteger tiempoRestante) {
         this.tiempoRestante.set(tiempoRestante);
-    }
-
-    public void setTiempo(BigInteger tiempo) {
-        setTiempoRestante(tiempo);
     }
 
     public void setEstadoActual(String estadoActual) {
@@ -111,10 +103,6 @@ public class Proceso {
     }
 
     public ObjectProperty<BigInteger> tiempoRestanteProperty() {
-        return tiempoRestante;
-    }
-
-    public ObjectProperty<BigInteger> tiempoProperty() {
         return tiempoRestante;
     }
 

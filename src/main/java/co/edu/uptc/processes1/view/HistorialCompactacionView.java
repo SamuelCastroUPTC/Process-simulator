@@ -75,11 +75,6 @@ public class HistorialCompactacionView {
             c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
         ));
 
-        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion = new TableColumn<>("Dirección Inicio");
-        colDireccion.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
-        ));
-
         TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
         colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
             c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
@@ -90,7 +85,7 @@ public class HistorialCompactacionView {
             c.getValue().detalle() != null ? c.getValue().detalle() : "-"
         ));
 
-        tablaEventos.getColumns().addAll(colPartRes, colDireccion, colTamanio, colDetalle);
+        tablaEventos.getColumns().addAll(colPartRes, colTamanio, colDetalle);
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
         VBox contenido = new VBox(12, tablaEventos);

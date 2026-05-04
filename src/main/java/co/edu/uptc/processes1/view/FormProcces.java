@@ -42,7 +42,7 @@ public class FormProcces {
     private TextField        txtNombre;
     private TextField        txtTiempo;
     private TextField        txtTamanioMemoria;   // campo nuevo
-    private ListView<String> listaProcesosCargados;
+    private TableView<Proceso> listaProcesosCargados;
 
     private Stage    modalStage;
     private Runnable onCargar;
@@ -110,12 +110,47 @@ public class FormProcces {
         HBox.setHgrow(colIzq, Priority.ALWAYS);
 
         // ══════════════ PANEL DERECHO EXTRA — Procesos cargados ══════════════
-        listaProcesosCargados = new ListView<>();
+        listaProcesosCargados = new TableView<>();
         listaProcesosCargados.setFocusTraversable(false);
         listaProcesosCargados.setMouseTransparent(true);
-        listaProcesosCargados.setPlaceholder(new Label("No hay procesos cargados."));
+        listaProcesosCargados.setEditable(false);
+        listaProcesosCargados.setColumnResizePolicy(
+            TableView.CONSTRAINED_RESIZE_POLICY
+        );
+        listaProcesosCargados.setPlaceholder(
+            new Label("No hay procesos cargados.")
+        );
         listaProcesosCargados.setPrefHeight(220);
         listaProcesosCargados.setMaxWidth(Double.MAX_VALUE);
+
+        TableColumn<Proceso, String> colNombreP = new TableColumn<>("Nombre");
+        colNombreP.setCellValueFactory(cell ->
+            new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getNombre()
+            )
+        );
+        colNombreP.setSortable(false);
+
+        TableColumn<Proceso, String> colTiempoP = new TableColumn<>("Tiempo (s)");
+        colTiempoP.setCellValueFactory(cell ->
+            new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getTiempoRestante()
+                    .divide(BigInteger.valueOf(1000L)).toString()
+            )
+        );
+        colTiempoP.setSortable(false);
+
+        TableColumn<Proceso, String> colTamanioP = new TableColumn<>("Tamaño");
+        colTamanioP.setCellValueFactory(cell ->
+            new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getTamanioMemoria().toString()
+            )
+        );
+        colTamanioP.setSortable(false);
+
+        listaProcesosCargados.getColumns().addAll(
+            colNombreP, colTiempoP, colTamanioP
+        );
 
         VBox panelProcesos = new VBox(10,
             seccion("PROCESOS CARGADOS"),
@@ -309,17 +344,19 @@ public class FormProcces {
     }
 
     public void setProcesosCargados(List<Proceso> procesos) {
-        List<String> items = new ArrayList<>();
-        if (procesos != null) {
-            for (Proceso proceso : procesos) {
-                if (proceso == null) {
-                    continue;
-                }
-                BigInteger tiempoSegundos = proceso.getTiempoRestante().divide(BigInteger.valueOf(1000L));
-                items.add(proceso.getNombre() + " | " + tiempoSegundos + " s | " + proceso.getTamanioMemoria() + "");
-            }
+        if (procesos == null) {
+            listaProcesosCargados.setItems(
+                FXCollections.observableArrayList()
+            );
+            return;
         }
-        listaProcesosCargados.setItems(FXCollections.observableArrayList(items));
+        List<Proceso> filtrados = new ArrayList<>();
+        for (Proceso proceso : procesos) {
+            if (proceso != null) filtrados.add(proceso);
+        }
+        listaProcesosCargados.setItems(
+            FXCollections.observableArrayList(filtrados)
+        );
     }
 
     public Stage getModalStage() { return modalStage; }
@@ -344,12 +381,6 @@ public class FormProcces {
         if (prompt != null) tf.setPromptText(prompt);
         tf.setMaxWidth(Double.MAX_VALUE);
         return tf;
-    }
-
-    private void soloNumeros(TextField tf) {
-        tf.textProperty().addListener((obs, oldV, newV) -> {
-            if (!newV.matches("\\d*")) tf.setText(newV.replaceAll("\\D", ""));
-        });
     }
 
     private void formatearConPuntosMiles(TextField campo) {

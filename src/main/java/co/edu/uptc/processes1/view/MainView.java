@@ -269,7 +269,11 @@ public class MainView implements IView {
         colNombre.setMaxWidth(Double.MAX_VALUE);
 
         TableColumn<Proceso, BigInteger> colTiempo = new TableColumn<>("Tiempo (s)");
-        colTiempo.setCellValueFactory(new PropertyValueFactory<>("tiempo"));
+        colTiempo.setCellValueFactory(cell ->
+            new javafx.beans.property.SimpleObjectProperty<>(
+                cell.getValue().getTiempoRestante()
+            )
+        );
         colTiempo.setPrefWidth(110);
         colTiempo.setMinWidth(100);
         colTiempo.setCellFactory(col -> new TableCell<>() {
@@ -645,10 +649,10 @@ public class MainView implements IView {
         if (ventanaCondensacion == null) {
             ventanaCondensacion = new HistorialCondensacionView();
         }
-        List<RegistroSimulacion.SnapshotParticion> soloAsignadas = datos.stream()
-            .filter(s -> s.descripcion() != null && s.descripcion().startsWith("Asignada"))
+        List<RegistroSimulacion.SnapshotParticion> finalizadas = datos.stream()
+            .filter(s -> s.descripcion() != null && s.descripcion().startsWith("Finalizada"))
             .toList();
-        ventanaCondensacion.mostrarConDatos(soloAsignadas);
+        ventanaCondensacion.mostrarConDatos(finalizadas);
     }
 
     @Override

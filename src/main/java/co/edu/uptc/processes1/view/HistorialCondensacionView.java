@@ -46,7 +46,7 @@ public class HistorialCondensacionView {
         Label lblTitulo = new Label("Historial - Particiones");
         lblTitulo.getStyleClass().add("historial-titulo");
 
-        Label lblSub = new Label("Asignaciones de particiones durante la simulación");
+        Label lblSub = new Label("Particiones liberadas en orden de finalización de procesos");
         lblSub.getStyleClass().add("historial-subtitulo");
 
         VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
