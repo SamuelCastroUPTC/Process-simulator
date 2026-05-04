@@ -57,6 +57,7 @@ public class MainView implements IView {
     // --- CAMBIO A: Nuevo mapa de ventanas de memoria ---
     private final Map<String, HistorialMemoriaView> ventanasMemoria = new HashMap<>();
     private HistorialCondensacionView ventanaCondensacion;
+    private HistorialCompactacionView ventanaCompactacion;
 
     private Object presenter;
 
@@ -137,6 +138,9 @@ public class MainView implements IView {
             ventanasMemoria.values().forEach(HistorialMemoriaView::cerrar); // Opcional: para limpiar también estas ventanas
             if (ventanaCondensacion != null) {
                 ventanaCondensacion.cerrar();
+            }
+            if (ventanaCompactacion != null) {
+                ventanaCompactacion.cerrar();
             }
             stage.close();
         });
@@ -449,14 +453,17 @@ public class MainView implements IView {
                 p.onVerHistorialParticiones();
                 return;
             }
+            if (RegistroSimulacion.COMPACTACION.equals(estado)) {
+                p.onVerHistorialCompactacion();
+                return;
+            }
             if ("Salida".equals(estado) || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
                 p.onVerHistorial(RegistroSimulacion.FINALIZADO);
                 return;
             }
             if (RegistroSimulacion.ASIGNACION.equals(estado)
                     || RegistroSimulacion.LIBERACION.equals(estado)
-                    || RegistroSimulacion.CONDENSACION.equals(estado)
-                    || RegistroSimulacion.COMPACTACION.equals(estado)) {
+                    || RegistroSimulacion.CONDENSACION.equals(estado)) {
                 p.onVerHistorialMemoria(estado);
             } else {
                 p.onVerHistorial(estado);
@@ -638,15 +645,18 @@ public class MainView implements IView {
         if (ventanaCondensacion == null) {
             ventanaCondensacion = new HistorialCondensacionView();
         }
-        ventanaCondensacion.mostrarConDatos(datos);
+        List<RegistroSimulacion.SnapshotParticion> soloAsignadas = datos.stream()
+            .filter(s -> s.descripcion() != null && s.descripcion().startsWith("Asignada"))
+            .toList();
+        ventanaCondensacion.mostrarConDatos(soloAsignadas);
     }
 
     @Override
     public void mostrarHistorialCompactacion(List<RegistroSimulacion.SnapshotMemoria> datos) {
-        if (ventanaCondensacion == null) {
-            ventanaCondensacion = new HistorialCondensacionView();
+        if (ventanaCompactacion == null) {
+            ventanaCompactacion = new HistorialCompactacionView();
         }
-        ventanaCondensacion.mostrarCompactacion(datos);
+        ventanaCompactacion.mostrarConDatos(datos);
     }
 
     private boolean esEstadoFinalizacion(String estado) {

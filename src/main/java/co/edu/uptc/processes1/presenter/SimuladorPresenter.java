@@ -284,6 +284,10 @@ public void onVerHistorialMemoria(String evento) {
     @Override
     public void onVerHistorialParticiones() {
         view.mostrarHistorialCondensacion(ultimoRegistro.getHistorialParticiones());
+    }
+
+    @Override
+    public void onVerHistorialCompactacion() {
         view.mostrarHistorialCompactacion(ultimoRegistro.getHistorialMemoria(RegistroSimulacion.CONDENSACION));
     }
 }

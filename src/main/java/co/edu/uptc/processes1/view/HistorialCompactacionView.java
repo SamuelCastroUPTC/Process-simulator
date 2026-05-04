@@ -20,16 +20,16 @@ import javafx.stage.StageStyle;
 
 import java.util.List;
 
-public class HistorialCondensacionView {
+public class HistorialCompactacionView {
 
     private Stage stage;
     private Label lblContador;
-    private TableView<RegistroSimulacion.SnapshotParticion> tablaEventos;
+    private TableView<RegistroSimulacion.SnapshotMemoria> tablaEventos;
 
     private double dragOffsetX;
     private double dragOffsetY;
 
-    public HistorialCondensacionView() {
+    public HistorialCompactacionView() {
         buildUI();
     }
 
@@ -43,10 +43,10 @@ public class HistorialCondensacionView {
         stage.setWidth(bounds.getWidth());
         stage.setHeight(bounds.getHeight());
 
-        Label lblTitulo = new Label("Historial - Particiones");
+        Label lblTitulo = new Label("Historial - Compactación");
         lblTitulo.getStyleClass().add("historial-titulo");
 
-        Label lblSub = new Label("Asignaciones de particiones durante la simulación");
+        Label lblSub = new Label("Fusiones de particiones libres durante la simulación");
         lblSub.getStyleClass().add("historial-subtitulo");
 
         VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
@@ -68,30 +68,34 @@ public class HistorialCondensacionView {
 
         tablaEventos = new TableView<>();
         tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tablaEventos.setPlaceholder(new Label("No hay eventos de particiones registrados."));
+        tablaEventos.setPlaceholder(new Label("No hay compactaciones registradas."));
 
-        TableColumn<RegistroSimulacion.SnapshotParticion, String> colPartRes = new TableColumn<>("Partición");
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartRes = new TableColumn<>("Partición Resultante");
         colPartRes.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().nombreParticion() != null ? c.getValue().nombreParticion() : "-"
+            c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
         ));
 
-        TableColumn<RegistroSimulacion.SnapshotParticion, String> colCond = new TableColumn<>("Descripción");
-        colCond.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().descripcion() != null ? c.getValue().descripcion() : "-"
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion = new TableColumn<>("Dirección Inicio");
+        colDireccion.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
         ));
 
-        TableColumn<RegistroSimulacion.SnapshotParticion, String> colTamanio = new TableColumn<>("Tamaño");
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
         colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
             c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
         ));
 
-        tablaEventos.getColumns().addAll(colPartRes, colCond, colTamanio);
+        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDetalle = new TableColumn<>("Detalle");
+        colDetalle.setCellValueFactory(c -> new SimpleStringProperty(
+            c.getValue().detalle() != null ? c.getValue().detalle() : "-"
+        ));
+
+        tablaEventos.getColumns().addAll(colPartRes, colDireccion, colTamanio, colDetalle);
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
         VBox contenido = new VBox(12, tablaEventos);
         contenido.setPadding(new Insets(16, 36, 0, 36));
         contenido.setStyle("-fx-background-color: #F0F7F9;");
-        VBox.setVgrow(tablaEventos, Priority.ALWAYS);
         VBox.setVgrow(contenido, Priority.ALWAYS);
 
         Button btnVolver = new Button("Volver al Menu Principal");
@@ -115,10 +119,10 @@ public class HistorialCondensacionView {
         stage.setScene(scene);
     }
 
-    public void mostrarConDatos(List<RegistroSimulacion.SnapshotParticion> datos) {
+    public void mostrarConDatos(List<RegistroSimulacion.SnapshotMemoria> datos) {
         tablaEventos.setItems(FXCollections.observableArrayList(datos));
         int n = datos.size();
-        lblContador.setText(n + (n == 1 ? " registro" : " registros"));
+        lblContador.setText(n + (n == 1 ? " evento" : " eventos"));
         stage.show();
         stage.toFront();
     }
