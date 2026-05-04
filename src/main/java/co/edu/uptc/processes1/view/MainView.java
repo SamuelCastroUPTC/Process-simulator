@@ -1,11 +1,9 @@
 package co.edu.uptc.processes1.view;
 
-import co.edu.uptc.processes1.model.BloqueMemoria;
-import co.edu.uptc.processes1.model.HuecoMemoria;
 import co.edu.uptc.processes1.model.MemoriaVariable;
+import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.presenter.RegistroSimulacion;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -72,7 +70,8 @@ public class MainView implements IView {
         RegistroSimulacion.ASIGNACION,       // nuevo
         RegistroSimulacion.LIBERACION,       // nuevo
         RegistroSimulacion.CONDENSACION,     // nuevo
-        RegistroSimulacion.COMPACTACION      // nuevo
+        RegistroSimulacion.COMPACTACION,     // nuevo
+        RegistroSimulacion.SHIFTING          // nuevo - eventos de desplazamiento
     };
 
     public MainView(Stage stage) {
@@ -580,7 +579,7 @@ public class MainView implements IView {
         BigInteger total = memoria.getTamanioTotal();
         double anchoBase = 720.0;
 
-        for (BloqueMemoria bloque : memoria.getBloquesOcupados()) {
+        for (Particion bloque : memoria.getBloquesOcupados()) {
             double proporcion = total.signum() == 0
                 ? 0.0
                 : bloque.getTamanio().doubleValue() / total.doubleValue();
@@ -596,7 +595,7 @@ public class MainView implements IView {
             panelMemoria.getChildren().add(l);
         }
 
-        for (HuecoMemoria hueco : memoria.getHuecos()) {
+        for (Particion hueco : memoria.getHuecos()) {
             double proporcion = total.signum() == 0
                 ? 0.0
                 : hueco.getTamanio().doubleValue() / total.doubleValue();

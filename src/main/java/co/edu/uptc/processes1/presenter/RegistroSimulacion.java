@@ -35,6 +35,7 @@ public class RegistroSimulacion {
             BigInteger direccionInicio,
             BigInteger tamanio,
             String detalle,
+            String metadatoExtra,
             List<String> estadoHuecos,
             List<String> estadoBloques
     ) {}
@@ -77,6 +78,7 @@ public class RegistroSimulacion {
     public static final String ASIGNACION   = "Asignación";
     public static final String LIBERACION   = "Liberación";
     public static final String CONDENSACION = "Condensación";
+    public static final String SHIFTING     = "Shifting";
     public static final String COMPACTACION = "Compactación";
 
     // ==========================================
@@ -104,6 +106,7 @@ public class RegistroSimulacion {
         
         historialMemoria.put(ASIGNACION, new ArrayList<>());
         historialMemoria.put(LIBERACION, new ArrayList<>());
+        historialMemoria.put(SHIFTING, new ArrayList<>());
         historialMemoria.put(CONDENSACION, new ArrayList<>());
         historialMemoria.put(COMPACTACION, new ArrayList<>());
     }
@@ -156,6 +159,48 @@ public class RegistroSimulacion {
     // ¡NUEVO MÉTODO! Para registrar eventos de memoria
     public void registrarMemoria(String evento, SnapshotMemoria snapshot) {
         historialMemoria.computeIfAbsent(evento, k -> new ArrayList<>()).add(snapshot);
+    }
+
+    /**
+     * Registra un evento de shifting (movimiento de proceso a nueva partición).
+     *
+     * @param nombreProceso nombre del proceso desplazado.
+     * @param particionAnterior nombre de la partición anterior.
+     * @param particionNueva nombre de la partición nueva.
+     * @param direccionAnterior dirección anterior del proceso.
+     * @param direccionNueva dirección nueva del proceso.
+     * @param tamanio tamaño del proceso.
+     */
+    public void registrarShifting(
+        String nombreProceso,
+        String particionAnterior,
+        String particionNueva,
+        BigInteger direccionAnterior,
+        BigInteger direccionNueva,
+        BigInteger tamanio) {
+
+        String detalle = "Proceso '" + nombreProceso + "' desplazado de " +
+            particionAnterior + "@" + direccionAnterior + " → " +
+            particionNueva + "@" + direccionNueva;
+
+        registrarMemoria(SHIFTING,
+            new SnapshotMemoria(
+                SHIFTING,
+                nombreProceso,
+                direccionNueva,
+                tamanio,
+                detalle,
+                particionAnterior,
+                List.of(),
+                List.of()
+            )
+        );
+
+        registrarParticion(new SnapshotParticion(
+            particionNueva,
+            "Shifting desde " + particionAnterior,
+            tamanio
+        ));
     }
 
     public void registrarCondensacion(SnapshotCondensacion snap) {

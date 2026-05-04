@@ -47,6 +47,7 @@ public class HistorialMemoriaView {
             case "Asignación"   -> "Memoria asignada a cada proceso durante la simulación";
             case "Liberación"   -> "Memoria liberada al terminar o expirar cada proceso";
             case "Condensación" -> "Huecos fusionados por adyacencia tras cada liberación";
+            case "Shifting"     -> "Procesos desplazados a nuevas direcciones tras liberación";
             default             -> "Eventos de memoria variable";
         };
 
@@ -75,29 +76,61 @@ public class HistorialMemoriaView {
         tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaEventos.setPlaceholder(new Label("No hay eventos registrados."));
 
-        String encabezadoProceso = this.evento.equals(RegistroSimulacion.CONDENSACION)
-            ? "Partición Resultante"
-            : "Proceso";
-        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>(encabezadoProceso);
-        colProceso.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
-        ));
+        if (this.evento.equals(RegistroSimulacion.SHIFTING)) {
+            // Columnas especiales para SHIFTING
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>("Proceso");
+            colProceso.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
+            ));
 
-        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion = new TableColumn<>("Dirección Inicio");
-        colDireccion.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
-        ));
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartAnterior = new TableColumn<>("Partición Anterior");
+            colPartAnterior.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().metadatoExtra() != null ? c.getValue().metadatoExtra() : "-"
+            ));
 
-        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
-        colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
-            c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
-        ));
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartNueva = new TableColumn<>("Partición Nueva");
+            colPartNueva.setCellValueFactory(c -> new SimpleStringProperty(extraerParticionNueva(c.getValue().detalle())));
 
-        TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDetalle = new TableColumn<>("Detalle");
-        colDetalle.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().detalle()));
-        colDetalle.setPrefWidth(400);
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirAnterior = new TableColumn<>("Dir. Anterior");
+            colDirAnterior.setCellValueFactory(c -> new SimpleStringProperty(extraerDireccionAnterior(c.getValue().detalle())));
 
-        tablaEventos.getColumns().addAll(colProceso, colDireccion, colTamanio, colDetalle);
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirNueva = new TableColumn<>("Dir. Nueva");
+            colDirNueva.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
+            ));
+
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
+            colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
+            ));
+
+            tablaEventos.getColumns().addAll(colProceso, colPartAnterior, colPartNueva, colDirAnterior, colDirNueva, colTamanio);
+        } else {
+            // Columnas estándar para otros eventos
+            String encabezadoProceso = this.evento.equals(RegistroSimulacion.CONDENSACION)
+                ? "Partición Resultante"
+                : "Proceso";
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>(encabezadoProceso);
+            colProceso.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
+            ));
+
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion = new TableColumn<>("Dirección Inicio");
+            colDireccion.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
+            ));
+
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
+            colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
+            ));
+
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDetalle = new TableColumn<>("Detalle");
+            colDetalle.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().detalle()));
+            colDetalle.setPrefWidth(400);
+
+            tablaEventos.getColumns().addAll(colProceso, colDireccion, colTamanio, colDetalle);
+        }
         VBox.setVgrow(tablaEventos, Priority.ALWAYS);
 
         // ── Layout central ────────────────────────────────────────────────────
@@ -135,6 +168,42 @@ public class HistorialMemoriaView {
         lblContador.setText(n + (n == 1 ? " evento" : " eventos"));
         stage.show();
         stage.toFront();
+    }
+
+    /**
+     * Extrae la partición nueva desde el detalle.
+     * Formato esperado: "Proceso 'X' desplazado de PAR1@dir1 → PAR2@dir2"
+     */
+    private String extraerParticionNueva(String detalle) {
+        if (detalle == null) return "-";
+        // Buscar "→ " y extraer lo que viene después
+        int idx = detalle.indexOf("→");
+        if (idx == -1) return "-";
+        String posterior = detalle.substring(idx + 2).trim();
+        // Extraer hasta el "@"
+        int at = posterior.indexOf("@");
+        if (at == -1) return posterior;
+        return posterior.substring(0, at);
+    }
+
+    /**
+     * Extrae la dirección anterior desde el detalle.
+     * Formato esperado: "Proceso 'X' desplazado de PAR1@dir1 → PAR2@dir2"
+     */
+    private String extraerDireccionAnterior(String detalle) {
+        if (detalle == null) return "-";
+        // Buscar " de " y extraer lo que viene después hasta "→"
+        int deIdx = detalle.indexOf(" de ");
+        if (deIdx == -1) return "-";
+        String parte = detalle.substring(deIdx + 4).trim();
+        // Buscar el "@" para obtener la dirección
+        int atIdx = parte.indexOf("@");
+        if (atIdx == -1) return "-";
+        String dirAnterior = parte.substring(atIdx + 1);
+        // Extraer hasta el espacio antes del "→"
+        int flecha = dirAnterior.indexOf("→");
+        if (flecha == -1) return dirAnterior.trim();
+        return dirAnterior.substring(0, flecha).trim();
     }
 
     public void cerrar() { stage.close(); }

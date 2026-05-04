@@ -2,24 +2,29 @@ package co.edu.uptc.processes1.presenter;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
 
 /**
- * Motor de simulacion Round Robin con flujo secuencial determinista.
+ * Motor de simulación Round Robin con flujo secuencial determinista.
+ * <p>
+ * Delega toda la lógica de shifting y condensación a MemoriaVariable.
+ * El motor solo orquesta la simulación y registra los eventos resultantes.
  */
 public class MotorSimulacion {
 
     private static final BigInteger QUANTUM = BigInteger.valueOf(1000L);
 
+    /**
+     * Ejecuta la simulación Round Robin sobre el conjunto de procesos.
+     *
+     * @param procesosIniciales lista inicial de procesos.
+     * @param memoria instancia de MemoriaVariable que gestiona asignación y liberación.
+     * @return registro de simulación con todos los eventos y estados.
+     */
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales, MemoriaVariable memoria) {
-        Set<String> particionesYaRegistradas = new HashSet<>();
         RegistroSimulacion registro = new RegistroSimulacion();
 
         BigInteger tamanioTotalMemoria = memoria.getTamanioTotal();
@@ -31,12 +36,6 @@ public class MotorSimulacion {
 
         int maxIteraciones = procesosOrdenados.size() * 1000;
         int iteracionesGlobales = 0;
-        int[] contadorParticion = {1};
-        Map<Integer, String> nombreParticionPorProceso = new HashMap<>();
-        Map<BigInteger, String> nombrePorDireccion = new HashMap<>();
-        List<String> slotsParticion = new ArrayList<>();
-        Set<String> slotsLibres = new HashSet<>();
-        Map<String, BigInteger> tamaniosPorParticion = new HashMap<>();
 
         List<ProcesoRuntime> colaListos = new ArrayList<>();
 
@@ -72,50 +71,31 @@ public class MotorSimulacion {
 
                 ProcesoRuntime actual = colaListos.get(i);
 
-                BigInteger espacioLibreAntesDeAsignar = memoria.getEspacioLibreTotal();
+                // Actualizar nombre de partición si el proceso se movió en el ciclo anterior
+                actualizarNombreParticionDelProceso(actual, memoria);
+
+                // Intenta asignar memoria al proceso
                 MemoriaVariable.ResultadoAsignacion resultado = memoria.asignar(actual.id, actual.nombre, actual.tamanioMemoria);
                 if (resultado.direccion() == null) {
+                    // No hay espacio disponible, salta este proceso en este ciclo
                     registrarEstado(registro, RegistroSimulacion.INICIO, actual);
                     i++;
                     continue;
                 }
 
-                BigInteger direccionInicio = resultado.direccion();
-
-                // Si ocurrió compactación antes de la asignación, registrarlo
+                // Registra compactación si ocurrió
                 if (resultado.compactoAntes()) {
-                    registrarEventoMemoria(registro, RegistroSimulacion.COMPACTACION,
-                        actual.nombre,
-                        BigInteger.ZERO,
-                        espacioLibreAntesDeAsignar,
-                        "Compactación ejecutada: " + espacioLibreAntesDeAsignar
-                            + " bytes libres consolidados para alojar '" + actual.nombre + "'",
-                        memoria);
+                    registrarEventoCompactacion(registro, actual.nombre, memoria);
                 }
 
-                if (!nombreParticionPorProceso.containsKey(actual.id)) {
-                    String nombreParticion = "PAR" + contadorParticion[0]++;
-                    nombreParticionPorProceso.put(actual.id, nombreParticion);
-                    slotsParticion.add(nombreParticion);
-                    tamaniosPorParticion.put(nombreParticion, actual.tamanioMemoria);
-                }
-                actual.referenciaMemoria = nombreParticionPorProceso.get(actual.id);
-                nombrePorDireccion.put(direccionInicio, actual.referenciaMemoria);
-                // Solo registrar la partición si no ha sido registrada antes
-                if (!particionesYaRegistradas.contains(actual.referenciaMemoria)) {
-                    registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
-                        actual.referenciaMemoria,
-                        "Asignada a proceso '" + actual.nombre + "'",
-                        actual.tamanioMemoria
-                    ));
-                    particionesYaRegistradas.add(actual.referenciaMemoria);
-                }
+                // Obtén nombre de partición actual del proceso en memoria
+                actual.referenciaMemoria = obtenerNombreParticionDelProceso(actual.id, memoria);
 
-                // ── NUEVO: registrar asignación ──────────────────────────────────────────
+                // Registra asignación
                 registrarEventoMemoria(registro, RegistroSimulacion.ASIGNACION,
-                    actual.nombre, direccionInicio, actual.tamanioMemoria,
-                    "Proceso '" + actual.nombre + "' asignado en dir=" + direccionInicio
-                    + ", tamaño=" + actual.tamanioMemoria, memoria);
+                    actual.nombre, resultado.direccion(), actual.tamanioMemoria,
+                    "Proceso '" + actual.nombre + "' asignado en partición " +
+                    actual.referenciaMemoria + " (dir=" + resultado.direccion() + ")", memoria);
 
                 boolean termino = false;
 
@@ -132,6 +112,8 @@ public class MotorSimulacion {
                     actual.tiempoRestante = tiempoTrasRafaga;
 
                     if (actual.tiempoRestante.compareTo(BigInteger.ZERO) <= 0) {
+                        termino = true;
+                        // Registra finalización
                         Proceso snapshotFinal = new Proceso(
                             actual.id,
                             actual.nombre,
@@ -140,50 +122,70 @@ public class MotorSimulacion {
                         );
                         snapshotFinal.setTiempoRestante(BigInteger.ZERO);
                         snapshotFinal.setEstadoActual(RegistroSimulacion.FINALIZADO);
-                        snapshotFinal.setParticion(new Particion(-1, actual.referenciaMemoria, actual.tamanioMemoria));
+                        snapshotFinal.setParticion(
+                            crearParticionSnapshot(actual.referenciaMemoria, actual.tamanioMemoria, actual.id, actual.nombre)
+                        );
                         registro.registrar(RegistroSimulacion.FINALIZADO, snapshotFinal);
-                        registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
-                            actual.referenciaMemoria,
-                            "Finalizada por proceso '" + actual.nombre + "'",
-                            actual.tamanioMemoria
-                        ));
-                        termino = true;
                     } else {
+                        // Quantum expirado, el proceso continuará
                         registrarEstado(registro, RegistroSimulacion.EXPIRACION_TIEMPO, actual);
                     }
 
                 } finally {
                     if (termino) {
-                        String nombreParticionLiberada = actual.referenciaMemoria;
-                        boolean esUltimoProceso = colaListos.size() == 1;
+                        // Libera memoria y procesa eventos de shifting y condensación
+                        MemoriaVariable.EventosLiberacion eventos = memoria.liberar(actual.id);
 
-                        memoria.liberar(actual.id);
+                        if (eventos != null) {
+                            // Registra cada movimiento de shifting
+                            for (MemoriaVariable.EventoMovimiento mov : eventos.movimientos()) {
+                                registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
+                                    mov.nombreProceso(),
+                                    mov.direccionNueva(),
+                                    mov.tamanio(),
+                                    "Shifting: proceso '" + mov.nombreProceso() + "' movido de " +
+                                    mov.particionAnterior() + " (dir=" + mov.direccionAnterior() + ") a " +
+                                    mov.particionNueva() + " (dir=" + mov.direccionNueva() + ")",
+                                    memoria);
 
-                        registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
-                            actual.nombre, null, actual.tamanioMemoria,
-                            "Proceso '" + actual.nombre + "' terminó. Partición "
-                                + nombreParticionLiberada + " libre", memoria);
+                                // Registra snapshot de partición nueva
+                                registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                                    mov.particionNueva(),
+                                    "Proceso '" + mov.nombreProceso() + "' reubicado por shifting",
+                                    mov.tamanio()
+                                ));
+                            }
 
-                        if (!esUltimoProceso) {
-                            intentarCondensar(
-                                nombreParticionLiberada,
-                                slotsParticion,
-                                slotsLibres,
-                                tamaniosPorParticion,
-                                registro,
-                                memoria,
-                                contadorParticion,
-                                false
-                            );
+                            // Registra condensación si ocurrió
+                            if (eventos.condensacion() != null) {
+                                MemoriaVariable.EventoCondensacion cond = eventos.condensacion();
+                                registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
+                                    cond.particionResultante(),
+                                    null,
+                                    cond.tamanioResultante(),
+                                    "Condensación: " + cond.particion1() + " + " + cond.particion2() +
+                                    " → " + cond.particionResultante(),
+                                    memoria);
+
+                                registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                                    cond.particionResultante(),
+                                    "Resultado de condensación",
+                                    cond.tamanioResultante()
+                                ));
+                            }
+
+                            registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
+                                actual.nombre, null, actual.tamanioMemoria,
+                                "Proceso '" + actual.nombre + "' terminó y fue liberado con shifting.",
+                                memoria);
                         }
                     } else {
-                        memoria.liberarSinCondensar(actual.id);
-                        if (direccionInicio != null) {
-                            nombrePorDireccion.put(direccionInicio, actual.referenciaMemoria);
-                        }
+                        // Quantum expirado: libera sin desplazar
+                        memoria.liberarSinDesplazar(actual.id);
                         registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                             actual.nombre, null, actual.tamanioMemoria,
-                            "Proceso '" + actual.nombre + "' expiró quantum, liberó temporalmente", memoria);
+                            "Proceso '" + actual.nombre + "' expiró quantum, liberó temporalmente (sin shifting)",
+                            memoria);
                     }
 
                     actual.referenciaMemoria = null;
@@ -203,6 +205,25 @@ public class MotorSimulacion {
         }
 
         return registro;
+    }
+
+    /**
+     * Actualiza el nombre de partición de un proceso consultando MemoriaVariable.
+     */
+    private void actualizarNombreParticionDelProceso(ProcesoRuntime actual, MemoriaVariable memoria) {
+        actual.referenciaMemoria = obtenerNombreParticionDelProceso(actual.id, memoria);
+    }
+
+    /**
+     * Obtiene el nombre de partición en el que reside un proceso.
+     */
+    private String obtenerNombreParticionDelProceso(int idProceso, MemoriaVariable memoria) {
+        for (Particion p : memoria.getParticionesOcupadas()) {
+            if (p.getIdProceso() == idProceso) {
+                return p.getNombre();
+            }
+        }
+        return null;
     }
 
     private void registrarEstado(RegistroSimulacion registro, String estado, ProcesoRuntime runtime) {
@@ -229,7 +250,7 @@ public class MotorSimulacion {
         snapshot.setEstadoActual(estado);
         String nombreParticion = nombreParticionOverride != null ? nombreParticionOverride : runtime.referenciaMemoria;
         if (nombreParticion != null) {
-            snapshot.setParticion(new Particion(-1, nombreParticion, runtime.tamanioMemoria));
+            snapshot.setParticion(crearParticionSnapshot(nombreParticion, runtime.tamanioMemoria, runtime.id, runtime.nombre));
         } else {
             snapshot.setParticion(null);
         }
@@ -249,97 +270,46 @@ public class MotorSimulacion {
     }
 
     private BigInteger obtenerParticionMasGrandeDisponible(MemoriaVariable memoria) {
-        return memoria.getHuecos().stream()
-            .map(hueco -> hueco.getTamanio())
+        return memoria.getParticionesLibres().stream()
+            .map(Particion::getTamanio)
             .max(BigInteger::compareTo)
             .orElse(BigInteger.ZERO);
     }
 
-    private void intentarCondensar(
-        String nombreParticionLiberada,
-        List<String> slotsParticion,
-        Set<String> slotsLibres,
-        Map<String, BigInteger> tamaniosPorParticion,
+    /**
+     * Registra un evento de compactación en el registro de simulación.
+     */
+    private void registrarEventoCompactacion(
         RegistroSimulacion registro,
-        MemoriaVariable memoria,
-        int[] contadorParticion,
-        boolean esUltimoProceso) {
+        String nombreProcesoDesencadenador,
+        MemoriaVariable memoria) {
 
-        if (esUltimoProceso) {
-            return;
-        }
+        List<String> huecos = memoria.getParticionesLibres().stream()
+            .map(h -> "Hueco[" + h.getDireccionInicio() + " - " + h.getDireccionFin()
+                      + ", tam=" + h.getTamanio() + "]")
+            .toList();
 
-        if (nombreParticionLiberada == null || nombreParticionLiberada.isBlank()) {
-            return;
-        }
+        List<String> bloques = memoria.getParticionesOcupadas().stream()
+            .map(b -> b.getNombreProceso() + "[" + b.getDireccionInicio()
+                      + " - " + b.getDireccionFin() + ", tam=" + b.getTamanio() + "]")
+            .toList();
 
-        slotsLibres.add(nombreParticionLiberada);
+        String detalle = "Compactación ejecutada para alojar '" + nombreProcesoDesencadenador +
+            "'. Estado tras compactación: " +
+            (bloques.isEmpty() ? "sin procesos" : bloques.size() + " procesos");
 
-        if (slotsLibres.size() < 2) {
-            return;
-        }
-
-        String particionIzquierda = null;
-        String particionDerecha = null;
-        for (String particionLibre : slotsLibres) {
-            if (particionIzquierda == null) {
-                particionIzquierda = particionLibre;
-            } else {
-                particionDerecha = particionLibre;
-                break;
-            }
-        }
-
-        if (particionIzquierda == null || particionDerecha == null) {
-            return;
-        }
-
-        BigInteger tamanioIzquierda = tamaniosPorParticion.getOrDefault(particionIzquierda, BigInteger.ZERO);
-        BigInteger tamanioDerecha = tamaniosPorParticion.getOrDefault(particionDerecha, BigInteger.ZERO);
-        BigInteger tamanioResultante = tamanioIzquierda.add(tamanioDerecha);
-        String nombreNuevo = "PAR" + contadorParticion[0]++;
-        String nombresUnidosTexto = particionIzquierda + "+" + particionDerecha;
-
-        registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
-            nombreNuevo,
-            "Condensación de " + nombresUnidosTexto,
-            tamanioResultante
-        ));
-        registro.registrarCondensacion(new RegistroSimulacion.SnapshotCondensacion(
-            nombreNuevo,
-            nombresUnidosTexto,
-            tamanioResultante
-        ));
-        registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
-            nombreNuevo, null, tamanioResultante,
-            "Condensación: " + nombresUnidosTexto + " → " + nombreNuevo, memoria);
-
-        int indiceIzquierda = slotsParticion.indexOf(particionIzquierda);
-        int indiceDerecha = slotsParticion.indexOf(particionDerecha);
-        int indiceReemplazo = Math.min(indiceIzquierda, indiceDerecha);
-        int indiceEliminacion = Math.max(indiceIzquierda, indiceDerecha);
-
-        slotsParticion.set(indiceReemplazo, nombreNuevo);
-        slotsParticion.remove(indiceEliminacion);
-
-        slotsLibres.remove(particionIzquierda);
-        slotsLibres.remove(particionDerecha);
-        slotsLibres.add(nombreNuevo);
-
-        tamaniosPorParticion.put(nombreNuevo, tamanioResultante);
-
-        if (!esUltimoProceso) {
-            intentarCondensar(
-                nombreNuevo,
-                slotsParticion,
-                slotsLibres,
-                tamaniosPorParticion,
-                registro,
-                memoria,
-                contadorParticion,
-                false
-            );
-        }
+        registro.registrarMemoria(RegistroSimulacion.COMPACTACION,
+            new RegistroSimulacion.SnapshotMemoria(
+                RegistroSimulacion.COMPACTACION,
+                nombreProcesoDesencadenador,
+                null,
+                memoria.getEspacioOcupado(),
+                detalle,
+                null,
+                huecos,
+                bloques
+            )
+        );
     }
 
     private static final class ProcesoRuntime {
@@ -381,21 +351,43 @@ public class MotorSimulacion {
         String detalle,
         MemoriaVariable memoria) {
 
-        List<String> huecos = memoria.getHuecos().stream()
+        List<String> huecos = memoria.getParticionesLibres().stream()
             .map(h -> "Hueco[" + h.getDireccionInicio() + " - " + h.getDireccionFin()
                       + ", tam=" + h.getTamanio() + "]")
             .toList();
 
-        List<String> bloques = memoria.getBloquesOcupados().stream()
+        List<String> bloques = memoria.getParticionesOcupadas().stream()
             .map(b -> b.getNombreProceso() + "[" + b.getDireccionInicio()
                       + " - " + b.getDireccionFin() + ", tam=" + b.getTamanio() + "]")
             .toList();
 
         registro.registrarMemoria(tipoEvento,
             new RegistroSimulacion.SnapshotMemoria(
-                tipoEvento, nombreProceso, direccion, tamanio, detalle, huecos, bloques
+                tipoEvento, nombreProceso, direccion, tamanio, detalle, null, huecos, bloques
             )
         );
+    }
+
+    private Particion crearParticionSnapshot(String nombreParticion, BigInteger tamanio, int idProceso, String nombreProceso) {
+        if (nombreParticion == null || nombreParticion.isBlank()) {
+            return null;
+        }
+
+        int idParticion = extraerIdParticion(nombreParticion);
+        return new Particion(idParticion, BigInteger.ZERO, tamanio, idProceso, nombreProceso);
+    }
+
+    private int extraerIdParticion(String nombreParticion) {
+        String digitos = nombreParticion.replaceAll("\\D+", "");
+        if (digitos.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            return Integer.parseInt(digitos);
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
     }
 
 }
