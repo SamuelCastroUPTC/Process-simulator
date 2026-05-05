@@ -59,10 +59,7 @@ public class RegistroSimulacion {
     public static final String EXPIRACION_TIEMPO = "Expiracion de tiempo";
     public static final String NO_EJECUTADO = "No Ejecutado";
     public static final String FINALIZADO = "Salida";
-
-    // ¡NUEVAS CONSTANTES! Para memoria
-    public static final String ASIGNACION   = "Asignación";
-    public static final String LIBERACION   = "Liberación";
+    public static final String FINALIZACIONDEPARTICION = "Finalizacion de Particion";
 
     // ==========================================
     // 3. MAPAS DE HISTORIAL (Variables de clase)
@@ -70,6 +67,7 @@ public class RegistroSimulacion {
     private final Map<String, List<String>> historialTexto;
     private final Map<String, List<SnapshotProceso>> historialProcesos;
     private final Map<String, List<UsoParticion>> usoParticiones;
+    private final List<SnapshotProceso> historialFinalizacionParticiones;
     
     // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
@@ -81,10 +79,9 @@ public class RegistroSimulacion {
         this.historialTexto = new LinkedHashMap<>();
         this.historialProcesos = new LinkedHashMap<>();
         this.usoParticiones = new LinkedHashMap<>();
+        this.historialFinalizacionParticiones = new ArrayList<>();
         this.historialMemoria = new LinkedHashMap<>(); // Inicializamos el mapa nuevo
-        
-        historialMemoria.put(ASIGNACION, new ArrayList<>());
-        historialMemoria.put(LIBERACION, new ArrayList<>());
+
     }
 
     // ==========================================
@@ -136,6 +133,10 @@ public class RegistroSimulacion {
         historialMemoria.computeIfAbsent(evento, k -> new ArrayList<>()).add(snapshot);
     }
 
+    public void registrarFinalizacionParticion(SnapshotProceso snapshot) {
+        historialFinalizacionParticiones.add(snapshot);
+    }
+
     // ==========================================
     // 6. GETTERS Y UTILIDADES
     // ==========================================
@@ -169,6 +170,10 @@ public class RegistroSimulacion {
             resultado.addAll(eventos);
         }
         return Collections.unmodifiableList(resultado);
+    }
+
+    public List<SnapshotProceso> getHistorialFinalizacionParticiones() {
+        return Collections.unmodifiableList(historialFinalizacionParticiones);
     }
 
     // ¡NUEVO MÉTODO! Para obtener el historial de memoria

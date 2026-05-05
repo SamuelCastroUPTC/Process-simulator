@@ -64,7 +64,8 @@ public class MainView implements IView {
         RegistroSimulacion.PROCESADOR,
         RegistroSimulacion.EXPIRACION_TIEMPO,
         RegistroSimulacion.NO_EJECUTADO,
-        RegistroSimulacion.FINALIZADO
+        RegistroSimulacion.FINALIZADO,
+        RegistroSimulacion.FINALIZACIONDEPARTICION
     };
 
     public MainView(Stage stage) {
@@ -597,10 +598,10 @@ public class MainView implements IView {
         HistorialView historialView = ventanasHistorial.computeIfAbsent(estado, HistorialView::new);
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
                 && RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
-            historialView.mostrarConDatos(datos, p.getUsoParticiones());
+            historialView.mostrarConDatos(datos, p.getUsoParticiones(), p.getUltimoRegistro().getHistorialFinalizacionParticiones());
             return;
         }
-        historialView.mostrarConDatos(datos);
+        historialView.mostrarConDatos(datos, List.of(), List.of());
     }
 
     @Override

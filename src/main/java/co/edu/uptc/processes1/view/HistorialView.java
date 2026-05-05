@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
  * Estructura con TabPane:
  *   - Pestaña "Todos"              : todos los procesos del estado.
  *   - Pestañas dinámicas           : una por partición, inyectadas desde fuera.
+ *   - Pestaña fija                 : finalización global de particiones.
  *
  * Cambios respecto a la versión anterior:
  *   1. La variable global `TableView tabla` se reemplazó por `TabPane tabPane`.
@@ -165,7 +166,8 @@ public class HistorialView {
      *
      * Lógica de columnas:
      *   - Expiración de tiempo: muestra "Nombre", "Tiempo (s)" y "Partición".
-     *   - Salida / Finalización de particiones: muestra "Nombre", "Tamaño" y "Particiones Usadas".
+    *   - Salida: muestra "Nombre", "Tamaño" y "Particiones Usadas".
+    *   - Finalización de Particiones: muestra "Partición" y "Tamaño".
      *   - Resto de estados: muestra "Nombre" y "Tiempo (s)".
      */
     private TableView<RegistroSimulacion.SnapshotProceso> crearTablaParaEstado() {
@@ -251,10 +253,14 @@ public class HistorialView {
      * @param datos Lista completa de procesos que pasaron por este estado.
      */
     public void mostrarConDatos(List<RegistroSimulacion.SnapshotProceso> datos) {
-        mostrarConDatos(datos, List.of());
+        mostrarConDatos(datos, List.of(), List.of());
     }
 
     public void mostrarConDatos(List<RegistroSimulacion.SnapshotProceso> datos, List<RegistroSimulacion.UsoParticion> usosParticion) {
+        mostrarConDatos(datos, usosParticion, List.of());
+    }
+
+    public void mostrarConDatos(List<RegistroSimulacion.SnapshotProceso> datos, List<RegistroSimulacion.UsoParticion> usosParticion, List<RegistroSimulacion.SnapshotProceso> finalizacionParticiones) {
         tabPane.getTabs().clear();
 
         Tab tabTodos = new Tab("Todos");
@@ -263,6 +269,7 @@ public class HistorialView {
         tabTodos.setContent(envolverTabla(tablaTodosNueva));
         tabTodos.setClosable(false);
         tabPane.getTabs().add(tabTodos);
+
 
         boolean esFinalizacion = ESTADO_FINALIZADO.equalsIgnoreCase(estado);
 
@@ -347,6 +354,29 @@ public class HistorialView {
             nuevaTab.setClosable(false);
             tabPane.getTabs().add(nuevaTab);
         }
+    }
+
+    private VBox construirTablaFinalizacionParticiones(List<RegistroSimulacion.SnapshotProceso> finalizacionParticiones) {
+        TableView<RegistroSimulacion.SnapshotProceso> tabla = new TableView<>();
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.setPlaceholder(new Label("No hay particiones finalizadas registradas."));
+
+        TableColumn<RegistroSimulacion.SnapshotProceso, String> colParticion = new TableColumn<>("Partición");
+        colParticion.setCellValueFactory(cell -> {
+            String nombreParticion = cell.getValue() != null ? cell.getValue().nombreParticion() : null;
+            return new SimpleStringProperty((nombreParticion == null || nombreParticion.isBlank()) ? "Sin asignar" : nombreParticion);
+        });
+
+        TableColumn<RegistroSimulacion.SnapshotProceso, String> colTamanio = new TableColumn<>("Tamaño");
+        colTamanio.setCellValueFactory(cell -> {
+            BigInteger tamanio = cell.getValue() != null ? cell.getValue().tamanioMemoria() : null;
+            return new SimpleStringProperty(tamanio != null ? tamanio.toString() : "-");
+        });
+
+        tabla.getColumns().addAll(colParticion, colTamanio);
+        tabla.setItems(FXCollections.observableArrayList(finalizacionParticiones != null ? finalizacionParticiones : List.of()));
+
+        return envolverTabla(tabla);
     }
 
     private VBox construirContenidoParticionFinal(

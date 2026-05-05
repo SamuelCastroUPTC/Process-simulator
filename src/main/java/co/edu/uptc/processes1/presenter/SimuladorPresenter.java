@@ -111,6 +111,11 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
+    public RegistroSimulacion getUltimoRegistro() {
+        return ultimoRegistro;
+    }
+
+    @Override
     public void onCargarProceso() {
         String nombre = view.getNombreProceso();
         String tiempoStr = limpiarNumero(view.getTiempoProceso());

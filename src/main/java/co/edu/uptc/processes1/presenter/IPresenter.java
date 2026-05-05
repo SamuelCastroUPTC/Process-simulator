@@ -36,6 +36,9 @@ public interface IPresenter {
     /** Devuelve el uso acumulado de particiones de la ultima simulacion. */
     List<RegistroSimulacion.UsoParticion> getUsoParticiones();
 
+    /** Devuelve el ultimo registro completo de simulacion. */
+    RegistroSimulacion getUltimoRegistro();
+
     /** El usuario presionÃ³ "Cargar Proceso". El Presentador leerÃ¡ los datos de la Vista. */
     void onCargarProceso();
 
