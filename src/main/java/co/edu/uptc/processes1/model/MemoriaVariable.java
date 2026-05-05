@@ -293,7 +293,7 @@ public class MemoriaVariable {
      * Libera un proceso sin hacer shifting ni condensación.
      * <p>
      * Usado cuando expira el quantum (Round Robin) y el proceso vuelve a la cola.
-     * Solo marca la partición como LIBRE con un nuevo ID.
+     * Solo marca la partición como LIBRE reutilizando el mismo ID.
      *
      * @param idProceso identificador del proceso a liberar.
      * @return {@code true} si el proceso fue encontrado y liberado, {@code false} en caso contrario.
@@ -302,8 +302,9 @@ public class MemoriaVariable {
         for (int i = 0; i < particiones.size(); i++) {
             Particion p = particiones.get(i);
             if (!p.estaLibre() && p.getIdProceso() == idProceso) {
-                // Crear nueva partición LIBRE con nuevo ID
-                Particion libre = new Particion(contadorId++, p.getDireccionInicio(), p.getTamanio());
+                // Reutiliza el MISMO ID: solo marca libre, no genera nuevo ID
+                Particion libre = new Particion(p.getId(),
+                    p.getDireccionInicio(), p.getTamanio());
                 particiones.set(i, libre);
                 return true;
             }

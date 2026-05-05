@@ -13,6 +13,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.math.BigInteger;
 import java.util.List;
 
 public class HistorialMemoriaView {
@@ -77,18 +78,25 @@ public class HistorialMemoriaView {
         tablaEventos.setPlaceholder(new Label("No hay eventos registrados."));
 
         if (this.evento.equals(RegistroSimulacion.COMPACTACION)) {
-            // Columnas especiales para compactación de procesos
-            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>("Proceso");
+            // Columna 1: Proceso — viene de nombreProceso()
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso =
+                new TableColumn<>("Proceso");
             colProceso.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
+                c.getValue().nombreProceso() != null
+                    ? c.getValue().nombreProceso() : "-"
             ));
 
-            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartAnterior = new TableColumn<>("Partición Anterior");
+            // Columna 2: Partición Anterior — viene de metadatoExtra()
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartAnterior =
+                new TableColumn<>("Partición Anterior");
             colPartAnterior.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().metadatoExtra() != null ? c.getValue().metadatoExtra() : "-"
+                c.getValue().metadatoExtra() != null
+                    ? c.getValue().metadatoExtra() : "-"
             ));
 
-            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartNueva = new TableColumn<>("Partición Nueva");
+            // Columna 3: Partición Nueva — extraer entre "→ " y "@" en detalle
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartNueva =
+                new TableColumn<>("Partición Nueva");
             colPartNueva.setCellValueFactory(c -> {
                 String det = c.getValue().detalle();
                 if (det == null) return new SimpleStringProperty("-");
@@ -96,34 +104,45 @@ public class HistorialMemoriaView {
                 if (flechaIdx == -1) return new SimpleStringProperty("-");
                 String posterior = det.substring(flechaIdx + 2).trim();
                 int atIdx = posterior.indexOf("@");
-                return new SimpleStringProperty(atIdx == -1 ? posterior : posterior.substring(0, atIdx));
+                return new SimpleStringProperty(
+                    atIdx == -1 ? posterior : posterior.substring(0, atIdx)
+                );
             });
 
-            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirAnterior = new TableColumn<>("Dir. Anterior");
+            // Columna 4: Dir. Anterior — extraer entre primer "@" y " →" en detalle
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirAnterior =
+                new TableColumn<>("Dir. Anterior");
             colDirAnterior.setCellValueFactory(c -> {
                 String det = c.getValue().detalle();
                 if (det == null) return new SimpleStringProperty("-");
-                int deIdx = det.indexOf("@");
-                if (deIdx == -1) return new SimpleStringProperty("-");
-                String desde = det.substring(deIdx + 1);
+                int atIdx = det.indexOf("@");
+                if (atIdx == -1) return new SimpleStringProperty("-");
+                String desde = det.substring(atIdx + 1);
                 int flechaIdx = desde.indexOf("→");
                 return new SimpleStringProperty(
                     flechaIdx == -1 ? desde.trim() : desde.substring(0, flechaIdx).trim()
                 );
             });
 
-            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirNueva = new TableColumn<>("Dir. Nueva");
+            // Columna 5: Dir. Nueva — viene de direccionInicio() que guardamos como dir nueva
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirNueva =
+                new TableColumn<>("Dir. Nueva");
             colDirNueva.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
+                c.getValue().direccionInicio() != null
+                    ? c.getValue().direccionInicio().toString() : "-"
             ));
 
-            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
+            // Columna 6: Tamaño — viene de tamanio()
+            TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio =
+                new TableColumn<>("Tamaño");
             colTamanio.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
+                c.getValue().tamanio() != null
+                    ? c.getValue().tamanio().toString() : "-"
             ));
 
             tablaEventos.getColumns().addAll(
-                colProceso, colPartAnterior, colPartNueva, colDirAnterior, colDirNueva, colTamanio
+                colProceso, colPartAnterior, colPartNueva,
+                colDirAnterior, colDirNueva, colTamanio
             );
         } else {
             // Columnas estándar para otros eventos
@@ -143,9 +162,23 @@ public class HistorialMemoriaView {
             });
 
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion = new TableColumn<>("Dirección Inicio");
-            colDireccion.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().direccionInicio() != null ? c.getValue().direccionInicio().toString() : "-"
-            ));
+            colDireccion.setCellValueFactory(c -> {
+                BigInteger dir = c.getValue().direccionInicio();
+                if (dir != null) {
+                    return new SimpleStringProperty(dir.toString());
+                }
+                // Fallback: extraer el inicio del primer hueco en estadoHuecos
+                List<String> huecos = c.getValue().estadoHuecos();
+                if (huecos != null && !huecos.isEmpty()) {
+                    String h = huecos.get(0);
+                    int idx = h.indexOf("[");
+                    int fin = h.indexOf(" -");
+                    if (idx != -1 && fin != -1) {
+                        return new SimpleStringProperty(h.substring(idx + 1, fin).trim());
+                    }
+                }
+                return new SimpleStringProperty("-");
+            });
 
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colTamanio = new TableColumn<>("Tamaño");
             colTamanio.setCellValueFactory(c -> new SimpleStringProperty(

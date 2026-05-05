@@ -113,6 +113,16 @@ public class MotorSimulacion {
 
                     if (actual.tiempoRestante.compareTo(BigInteger.ZERO) <= 0) {
                         termino = true;
+
+                        // Registrar la partición usada por este proceso
+                        if (actual.referenciaMemoria != null) {
+                            registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                                actual.referenciaMemoria,
+                                "Finalizada por proceso '" + actual.nombre + "'",
+                                actual.tamanioMemoria
+                            ));
+                        }
+
                         // Registra finalización
                         Proceso snapshotFinal = new Proceso(
                             actual.id,
@@ -137,9 +147,10 @@ public class MotorSimulacion {
                         MemoriaVariable.EventosLiberacion eventos = memoria.liberar(actual.id);
 
                         if (eventos != null) {
-                            // Registra cada movimiento de compactación
+
+                            // 1. Registrar cada movimiento de shifting (proceso que se desplazó)
                             for (MemoriaVariable.EventoMovimiento mov : eventos.movimientos()) {
-                                registro.registrarMovimientoCompactacion(
+                                registro.agregarMovimientoCompactacion(
                                     mov.nombreProceso(),
                                     mov.particionAnterior(),
                                     mov.particionNueva(),
@@ -149,27 +160,51 @@ public class MotorSimulacion {
                                 );
                             }
 
-                            // Registra condensación si ocurrió
+                            // 2. Registrar condensación si ocurrió (fusión de huecos libres)
                             if (eventos.condensacion() != null) {
                                 MemoriaVariable.EventoCondensacion cond = eventos.condensacion();
-                                registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
-                                    cond.particionResultante(),
-                                    null,
-                                    cond.tamanioResultante(),
-                                    "Condensación: " + cond.particion1() + " + " + cond.particion2() +
-                                    " → " + cond.particionResultante(),
-                                    memoria);
+
+                                List<String> huecos = memoria.getParticionesLibres().stream()
+                                    .map(h -> "Hueco[" + h.getDireccionInicio() + " - "
+                                        + h.getDireccionFin() + ", tam=" + h.getTamanio() + "]")
+                                    .toList();
+                                List<String> bloques = memoria.getParticionesOcupadas().stream()
+                                    .map(b -> b.getNombreProceso() + "[" + b.getDireccionInicio()
+                                        + " - " + b.getDireccionFin() + ", tam=" + b.getTamanio() + "]")
+                                    .toList();
+
+                                registro.registrarMemoria(RegistroSimulacion.CONDENSACION,
+                                    new RegistroSimulacion.SnapshotMemoria(
+                                        RegistroSimulacion.CONDENSACION,
+                                        cond.particionResultante(),
+                                        cond.tamanioResultante() != null
+                                            ? memoria.getParticionesLibres().stream()
+                                                .filter(p -> p.getNombre().equals(cond.particionResultante()))
+                                                .map(p -> p.getDireccionInicio())
+                                                .findFirst().orElse(null)
+                                            : null,
+                                        cond.tamanioResultante(),
+                                        "Condensación: " + cond.particion1() + " + "
+                                            + cond.particion2() + " → " + cond.particionResultante(),
+                                        null,
+                                        huecos,
+                                        bloques
+                                    )
+                                );
 
                                 registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
                                     cond.particionResultante(),
-                                    "Resultado de condensación",
+                                    "Resultado de condensación de "
+                                        + cond.particion1() + " + " + cond.particion2(),
                                     cond.tamanioResultante()
                                 ));
                             }
 
+                            // 3. Registrar evento de liberación general
                             registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                                 actual.nombre, null, actual.tamanioMemoria,
-                                "Proceso '" + actual.nombre + "' terminó y fue liberado con compactación.",
+                                "Proceso '" + actual.nombre
+                                    + "' terminó y fue liberado con shifting.",
                                 memoria);
                         }
                     } else {

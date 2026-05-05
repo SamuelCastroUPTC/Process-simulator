@@ -88,6 +88,7 @@ public class RegistroSimulacion {
     private final Map<String, List<UsoParticion>> usoParticiones;
     private final List<SnapshotCondensacion> historialCondensacion;
     private final List<SnapshotParticion> historialParticiones;
+    private final List<SnapshotMemoria> movimientosCompactacion = new ArrayList<>();
     
     // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
@@ -202,6 +203,35 @@ public class RegistroSimulacion {
         ));
     }
 
+    /**
+     * Registra un movimiento de compactación (shifting): un proceso fue
+     * desplazado a una nueva partición para tapar un hueco.
+     */
+    public void agregarMovimientoCompactacion(
+            String nombreProceso,
+            String particionAnterior,
+            String particionNueva,
+            BigInteger direccionAnterior,
+            BigInteger direccionNueva,
+            BigInteger tamanio) {
+
+        String detalle = "Proceso '" + nombreProceso + "' desplazado de "
+            + particionAnterior + "@" + direccionAnterior
+            + " → "
+            + particionNueva + "@" + direccionNueva;
+
+        movimientosCompactacion.add(new SnapshotMemoria(
+            COMPACTACION,
+            nombreProceso,
+            direccionNueva,
+            tamanio,
+            detalle,
+            particionAnterior,
+            List.of(),
+            List.of()
+        ));
+    }
+
     public void registrarCondensacion(SnapshotCondensacion snap) {
         historialCondensacion.add(snap);
     }
@@ -251,6 +281,10 @@ public class RegistroSimulacion {
 
     public List<SnapshotParticion> getHistorialParticiones() {
         return Collections.unmodifiableList(historialParticiones);
+    }
+
+    public List<SnapshotMemoria> getMovimientosCompactacion() {
+        return Collections.unmodifiableList(movimientosCompactacion);
     }
 
     public void actualizarParticionesFinalizadas(Map<String, String> redirecciones) {

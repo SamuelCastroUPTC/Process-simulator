@@ -276,7 +276,14 @@ public class SimuladorPresenter implements IPresenter {
 
 @Override
 public void onVerHistorialMemoria(String evento) {
-    List<RegistroSimulacion.SnapshotMemoria> datos = ultimoRegistro.getHistorialMemoria(evento);
+    if (RegistroSimulacion.COMPACTACION.equals(evento)) {
+        // Usar la lista acumuladora directa, no el Map
+        view.mostrarHistorialMemoria(evento,
+            ultimoRegistro.getMovimientosCompactacion());
+        return;
+    }
+    List<RegistroSimulacion.SnapshotMemoria> datos =
+        ultimoRegistro.getHistorialMemoria(evento);
     view.mostrarHistorialMemoria(evento, datos);
 }
 
