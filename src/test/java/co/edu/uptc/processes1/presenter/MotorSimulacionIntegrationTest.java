@@ -126,7 +126,7 @@ class MotorSimulacionIntegrationTest {
 
     @Test
     @DisplayName("Valida que múltiples procesos generan eventos de memoria")
-    void debeGenerarDesplazamientoYCondensacionConRenombramiento() {
+    void debeGenerarEventosConMultiplesProcesos() {
         // Arrange
         List<Proceso> procesos = crearProcesosEscenario();
 
@@ -140,29 +140,10 @@ class MotorSimulacionIntegrationTest {
             .hasSizeGreaterThanOrEqualTo(3);
 
         // Assert 2: Verificar que al menos algunos procesos se finalizaron y liberaron memoria
-        // Puede haber DESPLAZAMIENTO, CONDENSACION o ambos dependiendo de la dinámica
-        List<RegistroSimulacion.SnapshotMemoria> desplazamientos = registroActual.getHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO);
-        List<RegistroSimulacion.SnapshotMemoria> condensaciones = registroActual.getHistorialMemoria(RegistroSimulacion.CONDENSACION);
-
-        int totalEventosMem = desplazamientos.size() + condensaciones.size();
-        assertThat(totalEventosMem)
-            .as("Debe haber al menos 1 evento de DESPLAZAMIENTO o CONDENSACION")
-            .isGreaterThanOrEqualTo(1);
-
-        // Assert 3: Validar que los eventos de DESPLAZAMIENTO contienen metadatos (si hay alguno)
-        for (RegistroSimulacion.SnapshotMemoria snapshotDesplazamiento : desplazamientos) {
-            assertThat(snapshotDesplazamiento.evento())
-                .as("El evento debe ser DESPLAZAMIENTO")
-                .isEqualTo(RegistroSimulacion.DESPLAZAMIENTO);
-
-            assertThat(snapshotDesplazamiento.detalle())
-                .as("El detalle debe describir el movimiento")
-                .contains("desplazado");
-
-            assertThat(snapshotDesplazamiento.metadatoExtra())
-                .as("El metadatoExtra debe contener el nombre de la partición anterior")
-                .isNotBlank();
-        }
+        List<RegistroSimulacion.SnapshotMemoria> liberaciones = registroActual.getHistorialMemoria(RegistroSimulacion.LIBERACION);
+        assertThat(liberaciones)
+            .as("Debe haber eventos de liberación después de terminar procesos")
+            .hasSizeGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -234,7 +215,7 @@ class MotorSimulacionIntegrationTest {
     }
 
     @Test
-    @DisplayName("Validar dinámicas de asignación, liberación y desplazamiento")
+    @DisplayName("Validar dinámicas de asignación y liberación")
     void flujoCompletoDinamico() {
         // Arrange
         List<Proceso> procesos = crearProcesosEscenario();
@@ -249,22 +230,16 @@ class MotorSimulacionIntegrationTest {
             .as("Debe haber al menos 3 asignaciones (una por proceso)")
             .hasSizeGreaterThanOrEqualTo(3);
 
-        // Conteo de eventos por tipo
-        int desplazamientos = registroActual.getHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO).size();
-        int condensaciones = registroActual.getHistorialMemoria(RegistroSimulacion.CONDENSACION).size();
-        int compactaciones = registroActual.getHistorialMemoria(RegistroSimulacion.COMPACTACION).size();
-
-        // Debe haber al menos desplazamiento (por P1 liberándose) y condensación
-        assertThat(desplazamientos + condensaciones)
-            .as("La suma de DESPLAZAMIENTO + CONDENSACION debe ser > 0")
-            .isGreaterThan(0);
+        // Debe haber liberaciones
+        List<RegistroSimulacion.SnapshotMemoria> liberaciones = registroActual.getHistorialMemoria(RegistroSimulacion.LIBERACION);
+        assertThat(liberaciones)
+            .as("Debe haber eventos de liberación")
+            .hasSizeGreaterThanOrEqualTo(1);
 
         // Imprimir diagrama de eventos para debugging
         System.out.println("\n=== DIAGRAMA DE EVENTOS ===");
         System.out.println("ASIGNACIONES: " + asignaciones.size());
-        System.out.println("DESPLAZAMIENTOS: " + desplazamientos);
-        System.out.println("CONDENSACIONES: " + condensaciones);
-        System.out.println("COMPACTACIONES: " + compactaciones);
+        System.out.println("LIBERACIONES: " + liberaciones.size());
         System.out.println("Contador final de particiones: " + memoria.getContadorIdActual());
         System.out.println("Particiones finales: " + memoria.getParticiones().size());
         System.out.println("=== FIN DIAGRAMA ===\n");

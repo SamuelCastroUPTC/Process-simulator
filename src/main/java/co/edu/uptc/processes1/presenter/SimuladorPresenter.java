@@ -29,13 +29,7 @@ public class SimuladorPresenter implements IPresenter {
     RegistroSimulacion.PROCESADOR,
     RegistroSimulacion.EXPIRACION_TIEMPO,
     RegistroSimulacion.NO_EJECUTADO,
-    RegistroSimulacion.FINALIZADO,
-    RegistroSimulacion.HISTORIAL_PARTICIONES,
-    RegistroSimulacion.ASIGNACION,
-    RegistroSimulacion.LIBERACION,
-    RegistroSimulacion.DESPLAZAMIENTO,
-    RegistroSimulacion.CONDENSACION,
-    RegistroSimulacion.COMPACTACION
+    RegistroSimulacion.FINALIZADO
 );
 
     public SimuladorPresenter(IView view) {
@@ -266,26 +260,12 @@ public class SimuladorPresenter implements IPresenter {
             case "expiracion de tiempo", "expiracion", "expiracion de", "expiración de tiempo", "expiración" -> RegistroSimulacion.EXPIRACION_TIEMPO;
             case "no ejecutado" -> RegistroSimulacion.NO_EJECUTADO;
             case "salida", "finalizado" -> RegistroSimulacion.FINALIZADO;
-            case "finalizacion de particiones", "finalización de particiones", "particiones" -> RegistroSimulacion.HISTORIAL_PARTICIONES;
             default -> estado;
         };
     }
 
     private String limpiarNumero(String s) {
         return (s == null) ? "" : s.replaceAll("[^\\d]", "").trim();
-    }
-
-
-@Override
-public void onVerHistorialMemoria(String evento) {
-        List<RegistroSimulacion.SnapshotMemoria> datos =
-            ultimoRegistro.getHistorialMemoria(evento);
-        view.mostrarHistorialMemoria(evento, datos);
-    }
-
-    @Override
-    public void onVerHistorialParticiones() {
-        view.mostrarHistorialCondensacion(ultimoRegistro.getHistorialParticiones());
     }
 
 }

@@ -19,7 +19,7 @@ public class MemoriaVariable {
     /**
      * Resultado de una operación de asignación de memoria.
      */
-    public record ResultadoAsignacion(BigInteger direccion, boolean compactoAntes) {}
+    public record ResultadoAsignacion(BigInteger direccion) {}
 
     /**
      * Representa un movimiento de proceso durante la compactación post-liberación.
@@ -34,21 +34,10 @@ public class MemoriaVariable {
     ) {}
 
     /**
-     * Representa una condensación de dos huecos libres contiguos.
-     */
-    public record EventoCondensacion(
-        String particion1,
-        String particion2,
-        String particionResultante,
-        BigInteger tamanioResultante
-    ) {}
-
-    /**
-     * Resultado de una operación de liberación con movimientos y condensación.
+     * Resultado de una operación de liberación con movimientos.
      */
     public record EventosLiberacion(
-        List<EventoMovimiento> movimientos,
-        EventoCondensacion condensacion
+        List<EventoMovimiento> movimientos
     ) {}
 
     private final BigInteger tamanioTotal;
@@ -73,8 +62,7 @@ public class MemoriaVariable {
     /**
      * Asigna memoria a un proceso usando First Fit.
      * <p>
-     * Si no hay hueco suficiente pero hay espacio libre total, compacta
-     * la memoria e intenta de nuevo.
+     * Si no hay hueco suficiente, retorna null.
      *
      * @param idProceso identificador del proceso.
      * @param nombreProceso nombre del proceso.
@@ -82,24 +70,13 @@ public class MemoriaVariable {
      * @return {@code ResultadoAsignacion} con dirección asignada o null si falla.
      */
     public ResultadoAsignacion asignar(int idProceso, String nombreProceso, BigInteger tamanio) {
-        boolean compactoAntes = false;
-
-        // Intento 1: First Fit sin compactación
+        // Intento: First Fit sin compactación
         ResultadoAsignacion resultado = intentarAsignarFirstFit(idProceso, nombreProceso, tamanio);
         if (resultado.direccion() != null) {
             return resultado;
         }
 
-        // Intento 2: Compactar y reintentar si hay espacio libre total
-        if (getEspacioLibreTotal().compareTo(tamanio) >= 0) {
-            compactarInmediato();
-            resultado = intentarAsignarFirstFit(idProceso, nombreProceso, tamanio);
-            if (resultado.direccion() != null) {
-                return new ResultadoAsignacion(resultado.direccion(), true);
-            }
-        }
-
-        return new ResultadoAsignacion(null, false);
+        return new ResultadoAsignacion(null);
     }
 
     /**
@@ -133,62 +110,19 @@ public class MemoriaVariable {
                 particiones.add(i + 1, libre);
             }
 
-            return new ResultadoAsignacion(direccionAsignada, false);
+            return new ResultadoAsignacion(direccionAsignada);
         }
 
-        return new ResultadoAsignacion(null, false);
+        return new ResultadoAsignacion(null);
     }
 
     /**
-     * Compacta la memoria moviendo todos los procesos OCUPADOS al inicio.
+     * Libera un proceso y realiza shifting automático de memoria.
      * <p>
-     * Este método solo se invoca cuando falla una asignación. Se reasignan
-     * todos los IDs de partición para mantener el contador global.
-     */
-    private void compactarInmediato() {
-        // Extrae procesos ocupados en orden físico
-        List<Particion> ocupadas = particiones.stream()
-            .filter(p -> !p.estaLibre())
-            .sorted(Comparator.comparing(Particion::getDireccionInicio))
-            .toList();
-
-        // Reconstruye lista: ocupadas contiguamente, luego un hueco libre
-        List<Particion> nuevaLista = new ArrayList<>();
-        BigInteger cursor = BigInteger.ZERO;
-
-        for (Particion ocupada : ocupadas) {
-            Particion reubicada = new Particion(
-                contadorId++,
-                cursor,
-                ocupada.getTamanio(),
-                ocupada.getIdProceso(),
-                ocupada.getNombreProceso()
-            );
-            nuevaLista.add(reubicada);
-            cursor = cursor.add(ocupada.getTamanio());
-        }
-
-        // Crear hueco libre al final si hay espacio
-        if (cursor.compareTo(tamanioTotal) < 0) {
-            BigInteger tamanioLibre = tamanioTotal.subtract(cursor);
-            Particion hueco = new Particion(contadorId++, cursor, tamanioLibre);
-            nuevaLista.add(hueco);
-        }
-
-        // Reemplazar lista
-        particiones.clear();
-        particiones.addAll(nuevaLista);
-    }
-
-    /**
-     * Libera un proceso y compacta inmediatamente la memoria.
-     * <p>
-     * Este es el método más complejo: realiza movimientos de procesos para
-     * tapar huecos, registra todos los movimientos con sus IDs reasignados,
-     * y condensa huecos adyacentes.
+     * Realiza movimientos de procesos para tapar huecos generados por la liberación.
      *
      * @param idProceso identificador del proceso a liberar.
-     * @return {@code EventosLiberacion} con movimientos y condensación, o null si no existe.
+     * @return {@code EventosLiberacion} con movimientos, o null si no existe.
      */
     public EventosLiberacion liberar(int idProceso) {
         // Paso 1: Encontrar la partición ocupada
@@ -209,7 +143,6 @@ public class MemoriaVariable {
 
         String nombreParticionAnterior = ocupada.getNombre();
         List<EventoMovimiento> movimientos = new ArrayList<>();
-        EventoCondensacion condensacion = null;
 
         // Paso 2: Marcar como LIBRE con nuevo ID
         Particion hueco = new Particion(contadorId++, ocupada.getDireccionInicio(), ocupada.getTamanio());
@@ -260,33 +193,7 @@ public class MemoriaVariable {
             indiceHueco = i;
         }
 
-        // Actualizar referencia al hueco para el Paso 5
-        hueco = particiones.get(indiceHueco);
-        indiceOcupada = indiceHueco;
-
-        // Paso 5: Intentar condensar si hay otro hueco adyacente abajo
-        if (indiceOcupada + 1 < particiones.size()) {
-            Particion siguiente = particiones.get(indiceOcupada + 1);
-            if (siguiente.estaLibre()) {
-                // Crear nuevo hueco condensado
-                String nombrePart1 = hueco.getNombre();
-                String nombrePart2 = siguiente.getNombre();
-                BigInteger tamanioResultante = hueco.getTamanio().add(siguiente.getTamanio());
-
-                Particion condensada = new Particion(contadorId++, hueco.getDireccionInicio(), tamanioResultante);
-                particiones.set(indiceOcupada, condensada);
-                particiones.remove(indiceOcupada + 1);
-
-                condensacion = new EventoCondensacion(
-                    nombrePart1,
-                    nombrePart2,
-                    condensada.getNombre(),
-                    tamanioResultante
-                );
-            }
-        }
-
-        return new EventosLiberacion(movimientos, condensacion);
+        return new EventosLiberacion(movimientos);
     }
 
     /**

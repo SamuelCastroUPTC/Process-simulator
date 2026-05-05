@@ -50,12 +50,6 @@ public class RegistroSimulacion {
             String motivoNoEjecucion
     ) {}
 
-    public record SnapshotParticion(
-            String nombreParticion,
-            String descripcion,
-            BigInteger tamanio
-    ) {}
-
     // ==========================================
     // 2. CONSTANTES DE ESTADOS
     // ==========================================
@@ -65,15 +59,10 @@ public class RegistroSimulacion {
     public static final String EXPIRACION_TIEMPO = "Expiracion de tiempo";
     public static final String NO_EJECUTADO = "No Ejecutado";
     public static final String FINALIZADO = "Salida";
-    public static final String HISTORIAL_PARTICIONES = "Particiones";
-    public static final String FINALIZACION_PARTICIONES = HISTORIAL_PARTICIONES;
 
     // ¡NUEVAS CONSTANTES! Para memoria
     public static final String ASIGNACION   = "Asignación";
     public static final String LIBERACION   = "Liberación";
-    public static final String DESPLAZAMIENTO = "Desplazamiento";
-    public static final String CONDENSACION = "Condensación";
-    public static final String COMPACTACION = "Compactación";
 
     // ==========================================
     // 3. MAPAS DE HISTORIAL (Variables de clase)
@@ -81,7 +70,6 @@ public class RegistroSimulacion {
     private final Map<String, List<String>> historialTexto;
     private final Map<String, List<SnapshotProceso>> historialProcesos;
     private final Map<String, List<UsoParticion>> usoParticiones;
-    private final List<SnapshotParticion> historialParticiones;
     
     // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
@@ -93,14 +81,10 @@ public class RegistroSimulacion {
         this.historialTexto = new LinkedHashMap<>();
         this.historialProcesos = new LinkedHashMap<>();
         this.usoParticiones = new LinkedHashMap<>();
-        this.historialParticiones = new ArrayList<>();
         this.historialMemoria = new LinkedHashMap<>(); // Inicializamos el mapa nuevo
         
         historialMemoria.put(ASIGNACION, new ArrayList<>());
         historialMemoria.put(LIBERACION, new ArrayList<>());
-        historialMemoria.put(DESPLAZAMIENTO, new ArrayList<>());
-        historialMemoria.put(COMPACTACION, new ArrayList<>());
-        historialMemoria.put(CONDENSACION, new ArrayList<>());
     }
 
     // ==========================================
@@ -148,50 +132,8 @@ public class RegistroSimulacion {
         eventos.add(new UsoParticion(idProceso, nombreProceso, nombreParticion, 1L, tiempoCpu));
     }
 
-    // ¡NUEVO MÉTODO! Para registrar eventos de memoria
     public void registrarMemoria(String evento, SnapshotMemoria snapshot) {
         historialMemoria.computeIfAbsent(evento, k -> new ArrayList<>()).add(snapshot);
-    }
-
-    /**
-     * Registra un desplazamiento: un proceso fue movido a una nueva partición para tapar un hueco.
-     *
-     * @param nombreProceso nombre del proceso desplazado.
-     * @param particionAnterior nombre de la partición anterior.
-     * @param particionNueva nombre de la partición nueva.
-     * @param direccionAnterior dirección anterior del proceso.
-     * @param direccionNueva dirección nueva del proceso.
-     * @param tamanio tamaño del proceso.
-     */
-    public void registrarDesplazamiento(
-        String nombreProceso,
-        String particionAnterior,
-        String particionNueva,
-        BigInteger direccionAnterior,
-        BigInteger direccionNueva,
-        BigInteger tamanio) {
-
-        String detalle = "Proceso '" + nombreProceso + "' desplazado de "
-            + particionAnterior + "@" + direccionAnterior
-            + " → "
-            + particionNueva + "@" + direccionNueva;
-
-        registrarMemoria(DESPLAZAMIENTO,
-            new SnapshotMemoria(
-                DESPLAZAMIENTO,
-                nombreProceso,
-                direccionNueva,
-                tamanio,
-                detalle,
-                particionAnterior,
-                List.of(),
-                List.of()
-            )
-        );
-    }
-
-    public void registrarParticion(SnapshotParticion snap) {
-        historialParticiones.add(snap);
     }
 
     // ==========================================
@@ -227,59 +169,6 @@ public class RegistroSimulacion {
             resultado.addAll(eventos);
         }
         return Collections.unmodifiableList(resultado);
-    }
-
-    public List<SnapshotParticion> getHistorialParticiones() {
-        return Collections.unmodifiableList(historialParticiones);
-    }
-
-    public void actualizarParticionesFinalizadas(Map<String, String> redirecciones) {
-        if (redirecciones == null || redirecciones.isEmpty()) {
-            return;
-        }
-
-        actualizarParticionesEnLista(historialProcesos.get(FINALIZADO), redirecciones);
-        actualizarParticionesEnLista(historialProcesos.get(HISTORIAL_PARTICIONES), redirecciones);
-    }
-
-    private void actualizarParticionesEnLista(List<SnapshotProceso> snapshots, Map<String, String> redirecciones) {
-        if (snapshots == null || snapshots.isEmpty()) {
-            return;
-        }
-
-        for (int i = 0; i < snapshots.size(); i++) {
-            SnapshotProceso snapshot = snapshots.get(i);
-            String nombreParticion = snapshot.nombreParticion();
-            if (nombreParticion == null || nombreParticion.isBlank()) {
-                continue;
-            }
-
-            String actualizado = resolverParticion(nombreParticion, redirecciones);
-            if (!actualizado.equals(nombreParticion)) {
-                snapshots.set(i, new SnapshotProceso(
-                    snapshot.id(),
-                    snapshot.nombre(),
-                    snapshot.tiempoRestante(),
-                    snapshot.tamanioMemoria(),
-                    snapshot.estadoActual(),
-                    actualizado,
-                    snapshot.motivoNoEjecucion()
-                ));
-            }
-        }
-    }
-
-    private String resolverParticion(String nombreParticion, Map<String, String> redirecciones) {
-        String actual = nombreParticion;
-        int guardia = 0;
-        while (redirecciones.containsKey(actual) && guardia++ < 32) {
-            String siguiente = redirecciones.get(actual);
-            if (siguiente == null || siguiente.isBlank() || siguiente.equals(actual)) {
-                break;
-            }
-            actual = siguiente;
-        }
-        return actual;
     }
 
     // ¡NUEVO MÉTODO! Para obtener el historial de memoria

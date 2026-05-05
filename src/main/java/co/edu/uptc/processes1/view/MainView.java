@@ -51,31 +51,20 @@ public class MainView implements IView {
     private Stage stageHistoriales;
 
     private final Map<String, HistorialView> ventanasHistorial = new HashMap<>();
-    
-    // --- CAMBIO A: Nuevo mapa de ventanas de memoria ---
-    private final Map<String, HistorialMemoriaView> ventanasMemoria = new HashMap<>();
-    private HistorialCondensacionView ventanaCondensacion;
-    private HistorialCompactacionView ventanaCompactacion;
 
     private Object presenter;
 
     private double dragOffsetX;
     private double dragOffsetY;
 
-    // --- CAMBIO A: Array ESTADOS_HISTORIAL actualizado con los estados nuevos ---
+    // --- Array de estados disponibles para historial ---
     private static final String[] ESTADOS_HISTORIAL = {
         RegistroSimulacion.INICIO,
         RegistroSimulacion.DESPACHAR,
         RegistroSimulacion.PROCESADOR,
         RegistroSimulacion.EXPIRACION_TIEMPO,
         RegistroSimulacion.NO_EJECUTADO,
-        RegistroSimulacion.FINALIZADO,
-        "Finalización de Particiones",
-        RegistroSimulacion.ASIGNACION,
-        RegistroSimulacion.LIBERACION,
-        RegistroSimulacion.DESPLAZAMIENTO,
-        RegistroSimulacion.CONDENSACION,
-        RegistroSimulacion.COMPACTACION
+        RegistroSimulacion.FINALIZADO
     };
 
     public MainView(Stage stage) {
@@ -138,13 +127,6 @@ public class MainView implements IView {
         btnSalir.getStyleClass().add("btn-salir");
         btnSalir.setOnAction(e -> {
             ventanasHistorial.values().forEach(HistorialView::cerrar);
-            ventanasMemoria.values().forEach(HistorialMemoriaView::cerrar); // Opcional: para limpiar también estas ventanas
-            if (ventanaCondensacion != null) {
-                ventanaCondensacion.cerrar();
-            }
-            if (ventanaCompactacion != null) {
-                ventanaCompactacion.cerrar();
-            }
             stage.close();
         });
 
@@ -453,27 +435,10 @@ public class MainView implements IView {
         }
     }
 
-    // --- CAMBIO C: Redirigir los eventos de memoria al nuevo método del presenter ---
+    // Enruta el evento de historial al presentador
     private void notificarVerHistorial(String estado) {
         if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)) return;
-
-        if ("Finalización de Particiones".equals(estado)) {
-            p.onVerHistorialParticiones();
-        } else if (RegistroSimulacion.DESPLAZAMIENTO.equals(estado)) {
-            p.onVerHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO);
-        } else if (RegistroSimulacion.COMPACTACION.equals(estado)) {
-            p.onVerHistorialMemoria(RegistroSimulacion.COMPACTACION);
-        } else if (RegistroSimulacion.CONDENSACION.equals(estado)) {
-            p.onVerHistorialMemoria(RegistroSimulacion.CONDENSACION);
-        } else if ("Salida".equals(estado)
-                || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
-            p.onVerHistorial(RegistroSimulacion.FINALIZADO);
-        } else if (RegistroSimulacion.ASIGNACION.equals(estado)
-                || RegistroSimulacion.LIBERACION.equals(estado)) {
-            p.onVerHistorialMemoria(estado);
-        } else {
-            p.onVerHistorial(estado);
-        }
+        p.onVerHistorial(estado);
     }
 
     private void notificarEliminarProceso(Proceso proceso) {
@@ -631,42 +596,11 @@ public class MainView implements IView {
     public void mostrarHistorial(String estado, List<RegistroSimulacion.SnapshotProceso> datos) {
         HistorialView historialView = ventanasHistorial.computeIfAbsent(estado, HistorialView::new);
         if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
-                && esEstadoFinalizacion(estado)) {
+                && RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
             historialView.mostrarConDatos(datos, p.getUsoParticiones());
             return;
         }
         historialView.mostrarConDatos(datos);
-    }
-
-    // --- CAMBIO B: Implementación del método de IView ---
-    @Override
-    public void mostrarHistorialMemoria(String evento, List<RegistroSimulacion.SnapshotMemoria> datos) {
-        HistorialMemoriaView ventana = ventanasMemoria.computeIfAbsent(evento, HistorialMemoriaView::new);
-        ventana.mostrarConDatos(datos);
-    }
-
-    @Override
-    public void mostrarHistorialCondensacion(List<RegistroSimulacion.SnapshotParticion> datos) {
-        if (ventanaCondensacion == null) {
-            ventanaCondensacion = new HistorialCondensacionView();
-        }
-        List<RegistroSimulacion.SnapshotParticion> finalizadas = datos.stream()
-            .filter(s -> s.descripcion() != null && s.descripcion().startsWith("Finalizada"))
-            .toList();
-        ventanaCondensacion.mostrarConDatos(finalizadas);
-    }
-
-    @Override
-    public void mostrarHistorialCompactacion(List<RegistroSimulacion.SnapshotMemoria> datos) {
-        if (ventanaCompactacion == null) {
-            ventanaCompactacion = new HistorialCompactacionView();
-        }
-        ventanaCompactacion.mostrarConDatos(datos);
-    }
-
-    private boolean esEstadoFinalizacion(String estado) {
-        return RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)
-            || RegistroSimulacion.HISTORIAL_PARTICIONES.equalsIgnoreCase(estado);
     }
 
     @Override

@@ -48,8 +48,7 @@ public class HistorialView {
         Map.entry("Procesador",           new MetaEstado("#D4B896", "Procesos en ejecucion en el CPU")),
         Map.entry("Expiracion de tiempo", new MetaEstado("#D4A06A", "Procesos que expiraron su quantum")),
         Map.entry(RegistroSimulacion.NO_EJECUTADO, new MetaEstado("#CCCCCC", "Procesos que superan el tamano de su particion o sin particion asignada")),
-        Map.entry(ESTADO_FINALIZADO,      new MetaEstado("#AAAAAA", "Procesos que finalizaron su ejecucion")),
-        Map.entry(RegistroSimulacion.FINALIZACION_PARTICIONES, new MetaEstado("#AAAAAA", "Procesos finalizados agrupados por particion"))
+        Map.entry(ESTADO_FINALIZADO,      new MetaEstado("#AAAAAA", "Procesos que finalizaron su ejecucion"))
     );
 
     // ── Controles principales ─────────────────────────────────────────────────
@@ -198,8 +197,7 @@ public class HistorialView {
             });
             colParticion.setPrefWidth(140);
             tv.getColumns().add(colParticion);
-        } else if (ESTADO_FINALIZADO.equalsIgnoreCase(estado)
-            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado)) {
+        } else if (ESTADO_FINALIZADO.equalsIgnoreCase(estado)) {
 
             TableColumn<RegistroSimulacion.SnapshotProceso, String> colTamanio = new TableColumn<>("Tamaño");
             colTamanio.setCellValueFactory(cell -> new SimpleStringProperty(
@@ -266,8 +264,7 @@ public class HistorialView {
         tabTodos.setClosable(false);
         tabPane.getTabs().add(tabTodos);
 
-        boolean esFinalizacion = ESTADO_FINALIZADO.equalsIgnoreCase(estado)
-            || RegistroSimulacion.FINALIZACION_PARTICIONES.equalsIgnoreCase(estado);
+        boolean esFinalizacion = ESTADO_FINALIZADO.equalsIgnoreCase(estado);
 
         if (esFinalizacion) {
             Map<String, List<RegistroSimulacion.SnapshotProceso>> procesosPorParticion = datos.stream()

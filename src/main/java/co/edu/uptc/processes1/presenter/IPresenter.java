@@ -58,9 +58,4 @@ public interface IPresenter {
      * Retorna true si la edición fue exitosa.
      */
     boolean onEditarProceso(co.edu.uptc.processes1.model.Proceso proceso, String tiempoSegundos, String tamanioMemoria);
-
-    void onVerHistorialMemoria(String evento);
-
-    void onVerHistorialParticiones();
-    
 }
