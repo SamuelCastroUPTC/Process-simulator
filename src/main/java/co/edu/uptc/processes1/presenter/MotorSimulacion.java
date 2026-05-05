@@ -10,7 +10,7 @@ import co.edu.uptc.processes1.model.Proceso;
 /**
  * Motor de simulación Round Robin con flujo secuencial determinista.
  * <p>
- * Delega toda la lógica de shifting y condensación a MemoriaVariable.
+ * Delega toda la lógica de compactación y condensación a MemoriaVariable.
  * El motor solo orquesta la simulación y registra los eventos resultantes.
  */
 public class MotorSimulacion {
@@ -133,27 +133,20 @@ public class MotorSimulacion {
 
                 } finally {
                     if (termino) {
-                        // Libera memoria y procesa eventos de shifting y condensación
+                        // Libera memoria y procesa eventos de compactación y condensación
                         MemoriaVariable.EventosLiberacion eventos = memoria.liberar(actual.id);
 
                         if (eventos != null) {
-                            // Registra cada movimiento de shifting
+                            // Registra cada movimiento de compactación
                             for (MemoriaVariable.EventoMovimiento mov : eventos.movimientos()) {
-                                registrarEventoMemoria(registro, RegistroSimulacion.CONDENSACION,
+                                registro.registrarMovimientoCompactacion(
                                     mov.nombreProceso(),
-                                    mov.direccionNueva(),
-                                    mov.tamanio(),
-                                    "Shifting: proceso '" + mov.nombreProceso() + "' movido de " +
-                                    mov.particionAnterior() + " (dir=" + mov.direccionAnterior() + ") a " +
-                                    mov.particionNueva() + " (dir=" + mov.direccionNueva() + ")",
-                                    memoria);
-
-                                // Registra snapshot de partición nueva
-                                registro.registrarParticion(new RegistroSimulacion.SnapshotParticion(
+                                    mov.particionAnterior(),
                                     mov.particionNueva(),
-                                    "Proceso '" + mov.nombreProceso() + "' reubicado por shifting",
+                                    mov.direccionAnterior(),
+                                    mov.direccionNueva(),
                                     mov.tamanio()
-                                ));
+                                );
                             }
 
                             // Registra condensación si ocurrió
@@ -176,7 +169,7 @@ public class MotorSimulacion {
 
                             registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                                 actual.nombre, null, actual.tamanioMemoria,
-                                "Proceso '" + actual.nombre + "' terminó y fue liberado con shifting.",
+                                "Proceso '" + actual.nombre + "' terminó y fue liberado con compactación.",
                                 memoria);
                         }
                     } else {
@@ -184,7 +177,7 @@ public class MotorSimulacion {
                         memoria.liberarSinDesplazar(actual.id);
                         registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                             actual.nombre, null, actual.tamanioMemoria,
-                            "Proceso '" + actual.nombre + "' expiró quantum, liberó temporalmente (sin shifting)",
+                            "Proceso '" + actual.nombre + "' expiró quantum, liberó temporalmente (sin compactación)",
                             memoria);
                     }
 

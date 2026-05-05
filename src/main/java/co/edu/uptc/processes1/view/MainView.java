@@ -64,14 +64,17 @@ public class MainView implements IView {
 
     // --- CAMBIO A: Array ESTADOS_HISTORIAL actualizado con los estados nuevos ---
     private static final String[] ESTADOS_HISTORIAL = {
-        RegistroSimulacion.INICIO, "Despachar", "Procesador",
-        "Expiracion de tiempo", RegistroSimulacion.NO_EJECUTADO, "Salida",
+        RegistroSimulacion.INICIO,
+        RegistroSimulacion.DESPACHAR,
+        RegistroSimulacion.PROCESADOR,
+        RegistroSimulacion.EXPIRACION_TIEMPO,
+        RegistroSimulacion.NO_EJECUTADO,
+        RegistroSimulacion.FINALIZADO,
         "Finalización de Particiones",
-        RegistroSimulacion.ASIGNACION,       // nuevo
-        RegistroSimulacion.LIBERACION,       // nuevo
-        RegistroSimulacion.CONDENSACION,     // nuevo
-        RegistroSimulacion.COMPACTACION,     // nuevo
-        RegistroSimulacion.SHIFTING          // nuevo - eventos de desplazamiento
+        RegistroSimulacion.ASIGNACION,
+        RegistroSimulacion.LIBERACION,
+        RegistroSimulacion.CONDENSACION,
+        RegistroSimulacion.COMPACTACION
     };
 
     public MainView(Stage stage) {
@@ -451,26 +454,24 @@ public class MainView implements IView {
 
     // --- CAMBIO C: Redirigir los eventos de memoria al nuevo método del presenter ---
     private void notificarVerHistorial(String estado) {
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) {
-            if ("Finalización de Particiones".equals(estado)) {
-                p.onVerHistorialParticiones();
-                return;
-            }
-            if (RegistroSimulacion.COMPACTACION.equals(estado)) {
-                p.onVerHistorialCompactacion();
-                return;
-            }
-            if ("Salida".equals(estado) || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
-                p.onVerHistorial(RegistroSimulacion.FINALIZADO);
-                return;
-            }
-            if (RegistroSimulacion.ASIGNACION.equals(estado)
-                    || RegistroSimulacion.LIBERACION.equals(estado)
-                    || RegistroSimulacion.CONDENSACION.equals(estado)) {
-                p.onVerHistorialMemoria(estado);
-            } else {
-                p.onVerHistorial(estado);
-            }
+        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)) return;
+
+        if ("Finalización de Particiones".equals(estado)) {
+            p.onVerHistorialParticiones();
+        } else if (RegistroSimulacion.COMPACTACION.equals(estado)) {
+            // Movimientos de procesos hacia arriba (renombrado de particiones)
+            p.onVerHistorialMemoria(RegistroSimulacion.COMPACTACION);
+        } else if (RegistroSimulacion.CONDENSACION.equals(estado)) {
+            // Fusión de huecos libres adyacentes
+            p.onVerHistorialMemoria(RegistroSimulacion.CONDENSACION);
+        } else if ("Salida".equals(estado)
+                || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
+            p.onVerHistorial(RegistroSimulacion.FINALIZADO);
+        } else if (RegistroSimulacion.ASIGNACION.equals(estado)
+                || RegistroSimulacion.LIBERACION.equals(estado)) {
+            p.onVerHistorialMemoria(estado);
+        } else {
+            p.onVerHistorial(estado);
         }
     }
 

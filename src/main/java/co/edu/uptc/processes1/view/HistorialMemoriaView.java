@@ -46,8 +46,8 @@ public class HistorialMemoriaView {
         String descripcion = switch (evento) {
             case "Asignación"   -> "Memoria asignada a cada proceso durante la simulación";
             case "Liberación"   -> "Memoria liberada al terminar o expirar cada proceso";
-            case "Condensación" -> "Huecos fusionados por adyacencia tras cada liberación";
-            case "Shifting"     -> "Procesos desplazados a nuevas direcciones tras liberación";
+            case "Condensación" -> "Huecos libres adyacentes fusionados tras cada liberación";
+            case "Compactación" -> "Procesos desplazados hacia arriba (renombrados) para agrupar el espacio libre";
             default             -> "Eventos de memoria variable";
         };
 
@@ -76,8 +76,8 @@ public class HistorialMemoriaView {
         tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaEventos.setPlaceholder(new Label("No hay eventos registrados."));
 
-        if (this.evento.equals(RegistroSimulacion.SHIFTING)) {
-            // Columnas especiales para SHIFTING
+        if (this.evento.equals(RegistroSimulacion.COMPACTACION)) {
+            // Columnas especiales para compactación de procesos
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>("Proceso");
             colProceso.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
@@ -89,10 +89,28 @@ public class HistorialMemoriaView {
             ));
 
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colPartNueva = new TableColumn<>("Partición Nueva");
-            colPartNueva.setCellValueFactory(c -> new SimpleStringProperty(extraerParticionNueva(c.getValue().detalle())));
+            colPartNueva.setCellValueFactory(c -> {
+                String det = c.getValue().detalle();
+                if (det == null) return new SimpleStringProperty("-");
+                int flechaIdx = det.indexOf("→");
+                if (flechaIdx == -1) return new SimpleStringProperty("-");
+                String posterior = det.substring(flechaIdx + 2).trim();
+                int atIdx = posterior.indexOf("@");
+                return new SimpleStringProperty(atIdx == -1 ? posterior : posterior.substring(0, atIdx));
+            });
 
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirAnterior = new TableColumn<>("Dir. Anterior");
-            colDirAnterior.setCellValueFactory(c -> new SimpleStringProperty(extraerDireccionAnterior(c.getValue().detalle())));
+            colDirAnterior.setCellValueFactory(c -> {
+                String det = c.getValue().detalle();
+                if (det == null) return new SimpleStringProperty("-");
+                int deIdx = det.indexOf("@");
+                if (deIdx == -1) return new SimpleStringProperty("-");
+                String desde = det.substring(deIdx + 1);
+                int flechaIdx = desde.indexOf("→");
+                return new SimpleStringProperty(
+                    flechaIdx == -1 ? desde.trim() : desde.substring(0, flechaIdx).trim()
+                );
+            });
 
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDirNueva = new TableColumn<>("Dir. Nueva");
             colDirNueva.setCellValueFactory(c -> new SimpleStringProperty(
@@ -104,16 +122,25 @@ public class HistorialMemoriaView {
                 c.getValue().tamanio() != null ? c.getValue().tamanio().toString() : "-"
             ));
 
-            tablaEventos.getColumns().addAll(colProceso, colPartAnterior, colPartNueva, colDirAnterior, colDirNueva, colTamanio);
+            tablaEventos.getColumns().addAll(
+                colProceso, colPartAnterior, colPartNueva, colDirAnterior, colDirNueva, colTamanio
+            );
         } else {
             // Columnas estándar para otros eventos
             String encabezadoProceso = this.evento.equals(RegistroSimulacion.CONDENSACION)
                 ? "Partición Resultante"
                 : "Proceso";
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso = new TableColumn<>(encabezadoProceso);
-            colProceso.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().nombreProceso() != null ? c.getValue().nombreProceso() : "-"
-            ));
+            colProceso.setCellValueFactory(c -> {
+                String val = c.getValue().nombreProceso();
+                if (val == null || val.isBlank()) {
+                    String det = c.getValue().detalle();
+                    if (det != null && det.contains("→")) {
+                        val = det.substring(det.lastIndexOf("→") + 2).trim();
+                    }
+                }
+                return new SimpleStringProperty(val != null ? val : "-");
+            });
 
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colDireccion = new TableColumn<>("Dirección Inicio");
             colDireccion.setCellValueFactory(c -> new SimpleStringProperty(

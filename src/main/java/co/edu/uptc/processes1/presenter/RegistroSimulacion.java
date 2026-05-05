@@ -78,7 +78,6 @@ public class RegistroSimulacion {
     public static final String ASIGNACION   = "Asignación";
     public static final String LIBERACION   = "Liberación";
     public static final String CONDENSACION = "Condensación";
-    public static final String SHIFTING     = "Shifting";
     public static final String COMPACTACION = "Compactación";
 
     // ==========================================
@@ -106,9 +105,8 @@ public class RegistroSimulacion {
         
         historialMemoria.put(ASIGNACION, new ArrayList<>());
         historialMemoria.put(LIBERACION, new ArrayList<>());
-        historialMemoria.put(SHIFTING, new ArrayList<>());
-        historialMemoria.put(CONDENSACION, new ArrayList<>());
         historialMemoria.put(COMPACTACION, new ArrayList<>());
+        historialMemoria.put(CONDENSACION, new ArrayList<>());
     }
 
     // ==========================================
@@ -162,7 +160,7 @@ public class RegistroSimulacion {
     }
 
     /**
-     * Registra un evento de shifting (movimiento de proceso a nueva partición).
+     * Registra un movimiento de compactación (movimiento de proceso a nueva partición).
      *
      * @param nombreProceso nombre del proceso desplazado.
      * @param particionAnterior nombre de la partición anterior.
@@ -171,7 +169,7 @@ public class RegistroSimulacion {
      * @param direccionNueva dirección nueva del proceso.
      * @param tamanio tamaño del proceso.
      */
-    public void registrarShifting(
+    public void registrarMovimientoCompactacion(
         String nombreProceso,
         String particionAnterior,
         String particionNueva,
@@ -179,13 +177,14 @@ public class RegistroSimulacion {
         BigInteger direccionNueva,
         BigInteger tamanio) {
 
-        String detalle = "Proceso '" + nombreProceso + "' desplazado de " +
-            particionAnterior + "@" + direccionAnterior + " → " +
-            particionNueva + "@" + direccionNueva;
+        String detalle = "Proceso '" + nombreProceso + "' desplazado de "
+            + particionAnterior + "@" + direccionAnterior
+            + " → "
+            + particionNueva + "@" + direccionNueva;
 
-        registrarMemoria(SHIFTING,
+        registrarMemoria(COMPACTACION,
             new SnapshotMemoria(
-                SHIFTING,
+                COMPACTACION,
                 nombreProceso,
                 direccionNueva,
                 tamanio,
@@ -198,7 +197,7 @@ public class RegistroSimulacion {
 
         registrarParticion(new SnapshotParticion(
             particionNueva,
-            "Shifting desde " + particionAnterior,
+            "Compactación desde " + particionAnterior,
             tamanio
         ));
     }

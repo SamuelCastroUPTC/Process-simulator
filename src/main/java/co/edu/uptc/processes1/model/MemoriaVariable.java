@@ -215,58 +215,54 @@ public class MemoriaVariable {
         Particion hueco = new Particion(contadorId++, ocupada.getDireccionInicio(), ocupada.getTamanio());
         particiones.set(indiceOcupada, hueco);
 
-        // Paso 3: Buscar procesos abajo del hueco
-        List<Integer> indicesAbajo = new ArrayList<>();
-        for (int i = indiceOcupada + 1; i < particiones.size(); i++) {
-            Particion p = particiones.get(i);
-            if (!p.estaLibre()) {
-                indicesAbajo.add(i);
-            }
-        }
-
         // Paso 4: Mover procesos hacia arriba
-        if (!indicesAbajo.isEmpty()) {
-            BigInteger dirHuecoActual = hueco.getDireccionInicio();
+        // El hueco actual empieza en la dirección de la partición liberada
+        BigInteger dirHuecoActual = hueco.getDireccionInicio();
+        int indiceHueco = indiceOcupada; // rastrea dónde está el hueco en la lista
 
-            for (int indiceAbajoIdx = 0; indiceAbajoIdx < indicesAbajo.size(); indiceAbajoIdx++) {
-                int indiceAParamover = indicesAbajo.get(indiceAbajoIdx);
-                Particion aMover = particiones.get(indiceAParamover);
+        for (int i = indiceOcupada + 1; i < particiones.size(); i++) {
+            Particion aMover = particiones.get(i);
+            if (aMover.estaLibre()) continue; // solo mueve OCUPADAS
 
-                // Registrar movimiento
-                BigInteger dirAnterior = aMover.getDireccionInicio();
-                movimientos.add(new EventoMovimiento(
-                    aMover.getNombre(),
-                    "PAR" + contadorId,
-                    aMover.getNombreProceso(),
-                    dirAnterior,
-                    dirHuecoActual,
-                    aMover.getTamanio()
-                ));
+            BigInteger dirAnterior = aMover.getDireccionInicio();
+            String nombreAnterior = aMover.getNombre();
 
-                // Crear nueva partición ocupada con nuevo ID
-                Particion movida = new Particion(
-                    contadorId++,
-                    dirHuecoActual,
-                    aMover.getTamanio(),
-                    aMover.getIdProceso(),
-                    aMover.getNombreProceso()
-                );
+            // Nuevo ID para la partición desplazada
+            Particion movida = new Particion(
+                contadorId++,
+                dirHuecoActual,
+                aMover.getTamanio(),
+                aMover.getIdProceso(),
+                aMover.getNombreProceso()
+            );
 
-                // El hueco se desplaza a donde estaba la partición que se movió
-                hueco = new Particion(
-                    contadorId++,
-                    dirAnterior,
-                    aMover.getTamanio()
-                );
+            // El hueco se mueve a donde estaba la partición que subió
+            Particion nuevoHueco = new Particion(
+                contadorId++,
+                dirAnterior,
+                aMover.getTamanio()
+            );
 
-                // Actualizar lista
-                particiones.set(indiceAParamover, movida);
-                particiones.set(indiceOcupada, hueco);
+            movimientos.add(new EventoMovimiento(
+                nombreAnterior,          // partición anterior (PAR_VIEJA)
+                movida.getNombre(),      // partición nueva   (PAR_NUEVA con nuevo ID)
+                aMover.getNombreProceso(),
+                dirAnterior,             // dirección anterior
+                dirHuecoActual,          // dirección nueva
+                aMover.getTamanio()
+            ));
 
-                dirHuecoActual = aMover.getDireccionInicio();
-                indiceOcupada = indiceAParamover;
-            }
+            particiones.set(i, movida);
+            particiones.set(indiceHueco, nuevoHueco);
+
+            // El hueco ahora ocupa el lugar donde estaba aMover
+            dirHuecoActual = dirAnterior;
+            indiceHueco = i;
         }
+
+        // Actualizar referencia al hueco para el Paso 5
+        hueco = particiones.get(indiceHueco);
+        indiceOcupada = indiceHueco;
 
         // Paso 5: Intentar condensar si hay otro hueco adyacente abajo
         if (indiceOcupada + 1 < particiones.size()) {
