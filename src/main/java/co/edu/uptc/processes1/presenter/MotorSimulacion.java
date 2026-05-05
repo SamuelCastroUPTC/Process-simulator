@@ -143,14 +143,14 @@ public class MotorSimulacion {
 
                 } finally {
                     if (termino) {
-                        // Libera memoria y procesa eventos de compactación y condensación
+                        // Libera memoria y procesa eventos de desplazamiento y condensación
                         MemoriaVariable.EventosLiberacion eventos = memoria.liberar(actual.id);
 
                         if (eventos != null) {
 
-                            // 1. Registrar cada movimiento de shifting (proceso que se desplazó)
+                            // 1. Registrar cada movimiento de desplazamiento (proceso que se desplazó)
                             for (MemoriaVariable.EventoMovimiento mov : eventos.movimientos()) {
-                                registro.agregarMovimientoCompactacion(
+                                registro.registrarDesplazamiento(
                                     mov.nombreProceso(),
                                     mov.particionAnterior(),
                                     mov.particionNueva(),
@@ -204,7 +204,7 @@ public class MotorSimulacion {
                             registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                                 actual.nombre, null, actual.tamanioMemoria,
                                 "Proceso '" + actual.nombre
-                                    + "' terminó y fue liberado con shifting.",
+                                    + "' terminó y fue liberado con desplazamiento.",
                                 memoria);
                         }
                     } else {
@@ -212,7 +212,7 @@ public class MotorSimulacion {
                         memoria.liberarSinDesplazar(actual.id);
                         registrarEventoMemoria(registro, RegistroSimulacion.LIBERACION,
                             actual.nombre, null, actual.tamanioMemoria,
-                            "Proceso '" + actual.nombre + "' expiró quantum, liberó temporalmente (sin compactación)",
+                            "Proceso '" + actual.nombre + "' expiró quantum, liberó temporalmente (sin desplazamiento)",
                             memoria);
                     }
 

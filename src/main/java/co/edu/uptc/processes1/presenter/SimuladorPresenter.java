@@ -33,7 +33,9 @@ public class SimuladorPresenter implements IPresenter {
     RegistroSimulacion.HISTORIAL_PARTICIONES,
     RegistroSimulacion.ASIGNACION,
     RegistroSimulacion.LIBERACION,
-    RegistroSimulacion.CONDENSACION
+    RegistroSimulacion.DESPLAZAMIENTO,
+    RegistroSimulacion.CONDENSACION,
+    RegistroSimulacion.COMPACTACION
 );
 
     public SimuladorPresenter(IView view) {
@@ -276,24 +278,14 @@ public class SimuladorPresenter implements IPresenter {
 
 @Override
 public void onVerHistorialMemoria(String evento) {
-    if (RegistroSimulacion.COMPACTACION.equals(evento)) {
-        // Usar la lista acumuladora directa, no el Map
-        view.mostrarHistorialMemoria(evento,
-            ultimoRegistro.getMovimientosCompactacion());
-        return;
+        List<RegistroSimulacion.SnapshotMemoria> datos =
+            ultimoRegistro.getHistorialMemoria(evento);
+        view.mostrarHistorialMemoria(evento, datos);
     }
-    List<RegistroSimulacion.SnapshotMemoria> datos =
-        ultimoRegistro.getHistorialMemoria(evento);
-    view.mostrarHistorialMemoria(evento, datos);
-}
 
     @Override
     public void onVerHistorialParticiones() {
         view.mostrarHistorialCondensacion(ultimoRegistro.getHistorialParticiones());
     }
 
-    @Override
-    public void onVerHistorialCompactacion() {
-        view.mostrarHistorialCompactacion(ultimoRegistro.getHistorialMemoria(RegistroSimulacion.CONDENSACION));
-    }
 }

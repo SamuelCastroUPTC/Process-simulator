@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.*;
  *
  * Valida el comportamiento del motor de simulación Round Robin con:
  * - Renombramiento dinámico de particiones (IDs secuenciales)
- * - Shifting automático post-liberación
+ * - Desplazamiento automático post-liberación
  * - Condensación de huecos adyacentes
  * - Compactación bajo demanda
  *
  * Escenario: 3 procesos con memoria total de 500 bytes.
  */
-@DisplayName("Integración: MotorSimulacion con Renombramiento y Shifting")
+@DisplayName("Integración: MotorSimulacion con Renombramiento y Desplazamiento")
 class MotorSimulacionIntegrationTest {
 
     private MotorSimulacion motor;
@@ -126,7 +126,7 @@ class MotorSimulacionIntegrationTest {
 
     @Test
     @DisplayName("Valida que múltiples procesos generan eventos de memoria")
-    void debeGenerarShiftingYCondensacionConRenombramiento() {
+    void debeGenerarDesplazamientoYCondensacionConRenombramiento() {
         // Arrange
         List<Proceso> procesos = crearProcesosEscenario();
 
@@ -140,26 +140,26 @@ class MotorSimulacionIntegrationTest {
             .hasSizeGreaterThanOrEqualTo(3);
 
         // Assert 2: Verificar que al menos algunos procesos se finalizaron y liberaron memoria
-        // Puede haber SHIFTING, CONDENSACION o ambos dependiendo de la dinámica
-        List<RegistroSimulacion.SnapshotMemoria> shiftings = registroActual.getHistorialMemoria(RegistroSimulacion.SHIFTING);
+        // Puede haber DESPLAZAMIENTO, CONDENSACION o ambos dependiendo de la dinámica
+        List<RegistroSimulacion.SnapshotMemoria> desplazamientos = registroActual.getHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO);
         List<RegistroSimulacion.SnapshotMemoria> condensaciones = registroActual.getHistorialMemoria(RegistroSimulacion.CONDENSACION);
 
-        int totalEventosMem = shiftings.size() + condensaciones.size();
+        int totalEventosMem = desplazamientos.size() + condensaciones.size();
         assertThat(totalEventosMem)
-            .as("Debe haber al menos 1 evento de SHIFTING o CONDENSACION")
+            .as("Debe haber al menos 1 evento de DESPLAZAMIENTO o CONDENSACION")
             .isGreaterThanOrEqualTo(1);
 
-        // Assert 3: Validar que los eventos de SHIFTING contienen metadatos (si hay alguno)
-        for (RegistroSimulacion.SnapshotMemoria snapshotShifting : shiftings) {
-            assertThat(snapshotShifting.evento())
-                .as("El evento debe ser SHIFTING")
-                .isEqualTo(RegistroSimulacion.SHIFTING);
+        // Assert 3: Validar que los eventos de DESPLAZAMIENTO contienen metadatos (si hay alguno)
+        for (RegistroSimulacion.SnapshotMemoria snapshotDesplazamiento : desplazamientos) {
+            assertThat(snapshotDesplazamiento.evento())
+                .as("El evento debe ser DESPLAZAMIENTO")
+                .isEqualTo(RegistroSimulacion.DESPLAZAMIENTO);
 
-            assertThat(snapshotShifting.detalle())
+            assertThat(snapshotDesplazamiento.detalle())
                 .as("El detalle debe describir el movimiento")
                 .contains("desplazado");
 
-            assertThat(snapshotShifting.metadatoExtra())
+            assertThat(snapshotDesplazamiento.metadatoExtra())
                 .as("El metadatoExtra debe contener el nombre de la partición anterior")
                 .isNotBlank();
         }
@@ -234,7 +234,7 @@ class MotorSimulacionIntegrationTest {
     }
 
     @Test
-    @DisplayName("Validar dinámicas de asignación, liberación y shifting")
+    @DisplayName("Validar dinámicas de asignación, liberación y desplazamiento")
     void flujoCompletoDinamico() {
         // Arrange
         List<Proceso> procesos = crearProcesosEscenario();
@@ -250,19 +250,19 @@ class MotorSimulacionIntegrationTest {
             .hasSizeGreaterThanOrEqualTo(3);
 
         // Conteo de eventos por tipo
-        int shiftings = registroActual.getHistorialMemoria(RegistroSimulacion.SHIFTING).size();
+        int desplazamientos = registroActual.getHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO).size();
         int condensaciones = registroActual.getHistorialMemoria(RegistroSimulacion.CONDENSACION).size();
         int compactaciones = registroActual.getHistorialMemoria(RegistroSimulacion.COMPACTACION).size();
 
-        // Debe haber al menos shifting (por P1 liberándose) y condensación (por liberar + shift)
-        assertThat(shiftings + condensaciones)
-            .as("La suma de SHIFTING + CONDENSACION debe ser > 0")
+        // Debe haber al menos desplazamiento (por P1 liberándose) y condensación
+        assertThat(desplazamientos + condensaciones)
+            .as("La suma de DESPLAZAMIENTO + CONDENSACION debe ser > 0")
             .isGreaterThan(0);
 
         // Imprimir diagrama de eventos para debugging
         System.out.println("\n=== DIAGRAMA DE EVENTOS ===");
         System.out.println("ASIGNACIONES: " + asignaciones.size());
-        System.out.println("SHIFTINGS: " + shiftings);
+        System.out.println("DESPLAZAMIENTOS: " + desplazamientos);
         System.out.println("CONDENSACIONES: " + condensaciones);
         System.out.println("COMPACTACIONES: " + compactaciones);
         System.out.println("Contador final de particiones: " + memoria.getContadorIdActual());
@@ -271,7 +271,7 @@ class MotorSimulacionIntegrationTest {
     }
 
     @Test
-    @DisplayName("Validar renombramiento de particiones durante shifting")
+    @DisplayName("Validar renombramiento de particiones durante desplazamiento")
     void nombramientoParticionesConsistente() {
         // Arrange
         List<Proceso> procesos = crearProcesosEscenario();
@@ -308,24 +308,24 @@ class MotorSimulacionIntegrationTest {
         // Act
         registroActual = motor.ejecutar(procesos, memoria);
 
-        // Assert: todos los eventos de SHIFTING deben tener metadatoExtra
-        List<RegistroSimulacion.SnapshotMemoria> shiftings = registroActual.getHistorialMemoria(RegistroSimulacion.SHIFTING);
+        // Assert: todos los eventos de DESPLAZAMIENTO deben tener metadatoExtra
+        List<RegistroSimulacion.SnapshotMemoria> desplazamientos = registroActual.getHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO);
 
-        for (RegistroSimulacion.SnapshotMemoria snapshot : shiftings) {
+        for (RegistroSimulacion.SnapshotMemoria snapshot : desplazamientos) {
             assertThat(snapshot.evento())
-                .isEqualTo(RegistroSimulacion.SHIFTING);
+                .isEqualTo(RegistroSimulacion.DESPLAZAMIENTO);
 
             assertThat(snapshot.metadatoExtra())
-                .as("SHIFTING debe incluir metadatoExtra con partición anterior")
+                .as("DESPLAZAMIENTO debe incluir metadatoExtra con partición anterior")
                 .isNotNull()
                 .isNotBlank();
 
             assertThat(snapshot.nombreProceso())
-                .as("SHIFTING debe registrar el nombre del proceso que se movió")
+                .as("DESPLAZAMIENTO debe registrar el nombre del proceso que se movió")
                 .isNotNull();
 
             assertThat(snapshot.tamanio())
-                .as("SHIFTING debe registrar el tamaño del proceso")
+                .as("DESPLAZAMIENTO debe registrar el tamaño del proceso")
                 .isNotNull();
         }
     }

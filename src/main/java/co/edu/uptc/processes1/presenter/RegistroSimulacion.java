@@ -50,12 +50,6 @@ public class RegistroSimulacion {
             String motivoNoEjecucion
     ) {}
 
-    public record SnapshotCondensacion(
-            String particionResultante,
-            String particionesCondensadas,
-            BigInteger tamanioResultante
-    ) {}
-
     public record SnapshotParticion(
             String nombreParticion,
             String descripcion,
@@ -77,6 +71,7 @@ public class RegistroSimulacion {
     // ¡NUEVAS CONSTANTES! Para memoria
     public static final String ASIGNACION   = "Asignación";
     public static final String LIBERACION   = "Liberación";
+    public static final String DESPLAZAMIENTO = "Desplazamiento";
     public static final String CONDENSACION = "Condensación";
     public static final String COMPACTACION = "Compactación";
 
@@ -86,9 +81,7 @@ public class RegistroSimulacion {
     private final Map<String, List<String>> historialTexto;
     private final Map<String, List<SnapshotProceso>> historialProcesos;
     private final Map<String, List<UsoParticion>> usoParticiones;
-    private final List<SnapshotCondensacion> historialCondensacion;
     private final List<SnapshotParticion> historialParticiones;
-    private final List<SnapshotMemoria> movimientosCompactacion = new ArrayList<>();
     
     // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
@@ -100,12 +93,12 @@ public class RegistroSimulacion {
         this.historialTexto = new LinkedHashMap<>();
         this.historialProcesos = new LinkedHashMap<>();
         this.usoParticiones = new LinkedHashMap<>();
-        this.historialCondensacion = new ArrayList<>();
         this.historialParticiones = new ArrayList<>();
         this.historialMemoria = new LinkedHashMap<>(); // Inicializamos el mapa nuevo
         
         historialMemoria.put(ASIGNACION, new ArrayList<>());
         historialMemoria.put(LIBERACION, new ArrayList<>());
+        historialMemoria.put(DESPLAZAMIENTO, new ArrayList<>());
         historialMemoria.put(COMPACTACION, new ArrayList<>());
         historialMemoria.put(CONDENSACION, new ArrayList<>());
     }
@@ -161,7 +154,7 @@ public class RegistroSimulacion {
     }
 
     /**
-     * Registra un movimiento de compactación (movimiento de proceso a nueva partición).
+     * Registra un desplazamiento: un proceso fue movido a una nueva partición para tapar un hueco.
      *
      * @param nombreProceso nombre del proceso desplazado.
      * @param particionAnterior nombre de la partición anterior.
@@ -170,7 +163,7 @@ public class RegistroSimulacion {
      * @param direccionNueva dirección nueva del proceso.
      * @param tamanio tamaño del proceso.
      */
-    public void registrarMovimientoCompactacion(
+    public void registrarDesplazamiento(
         String nombreProceso,
         String particionAnterior,
         String particionNueva,
@@ -183,9 +176,9 @@ public class RegistroSimulacion {
             + " → "
             + particionNueva + "@" + direccionNueva;
 
-        registrarMemoria(COMPACTACION,
+        registrarMemoria(DESPLAZAMIENTO,
             new SnapshotMemoria(
-                COMPACTACION,
+                DESPLAZAMIENTO,
                 nombreProceso,
                 direccionNueva,
                 tamanio,
@@ -195,45 +188,6 @@ public class RegistroSimulacion {
                 List.of()
             )
         );
-
-        registrarParticion(new SnapshotParticion(
-            particionNueva,
-            "Compactación desde " + particionAnterior,
-            tamanio
-        ));
-    }
-
-    /**
-     * Registra un movimiento de compactación (shifting): un proceso fue
-     * desplazado a una nueva partición para tapar un hueco.
-     */
-    public void agregarMovimientoCompactacion(
-            String nombreProceso,
-            String particionAnterior,
-            String particionNueva,
-            BigInteger direccionAnterior,
-            BigInteger direccionNueva,
-            BigInteger tamanio) {
-
-        String detalle = "Proceso '" + nombreProceso + "' desplazado de "
-            + particionAnterior + "@" + direccionAnterior
-            + " → "
-            + particionNueva + "@" + direccionNueva;
-
-        movimientosCompactacion.add(new SnapshotMemoria(
-            COMPACTACION,
-            nombreProceso,
-            direccionNueva,
-            tamanio,
-            detalle,
-            particionAnterior,
-            List.of(),
-            List.of()
-        ));
-    }
-
-    public void registrarCondensacion(SnapshotCondensacion snap) {
-        historialCondensacion.add(snap);
     }
 
     public void registrarParticion(SnapshotParticion snap) {
@@ -275,16 +229,8 @@ public class RegistroSimulacion {
         return Collections.unmodifiableList(resultado);
     }
 
-    public List<SnapshotCondensacion> getHistorialCondensacion() {
-        return Collections.unmodifiableList(historialCondensacion);
-    }
-
     public List<SnapshotParticion> getHistorialParticiones() {
         return Collections.unmodifiableList(historialParticiones);
-    }
-
-    public List<SnapshotMemoria> getMovimientosCompactacion() {
-        return Collections.unmodifiableList(movimientosCompactacion);
     }
 
     public void actualizarParticionesFinalizadas(Map<String, String> redirecciones) {

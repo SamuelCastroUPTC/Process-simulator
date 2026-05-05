@@ -73,6 +73,7 @@ public class MainView implements IView {
         "Finalización de Particiones",
         RegistroSimulacion.ASIGNACION,
         RegistroSimulacion.LIBERACION,
+        RegistroSimulacion.DESPLAZAMIENTO,
         RegistroSimulacion.CONDENSACION,
         RegistroSimulacion.COMPACTACION
     };
@@ -458,11 +459,11 @@ public class MainView implements IView {
 
         if ("Finalización de Particiones".equals(estado)) {
             p.onVerHistorialParticiones();
+        } else if (RegistroSimulacion.DESPLAZAMIENTO.equals(estado)) {
+            p.onVerHistorialMemoria(RegistroSimulacion.DESPLAZAMIENTO);
         } else if (RegistroSimulacion.COMPACTACION.equals(estado)) {
-            // Movimientos de procesos hacia arriba (renombrado de particiones)
             p.onVerHistorialMemoria(RegistroSimulacion.COMPACTACION);
         } else if (RegistroSimulacion.CONDENSACION.equals(estado)) {
-            // Fusión de huecos libres adyacentes
             p.onVerHistorialMemoria(RegistroSimulacion.CONDENSACION);
         } else if ("Salida".equals(estado)
                 || RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {

@@ -47,6 +47,7 @@ public class HistorialMemoriaView {
         String descripcion = switch (evento) {
             case "Asignación"   -> "Memoria asignada a cada proceso durante la simulación";
             case "Liberación"   -> "Memoria liberada al terminar o expirar cada proceso";
+            case "Desplazamiento" -> "Procesos desplazados hacia arriba tras liberación de un proceso finalizado";
             case "Condensación" -> "Huecos libres adyacentes fusionados tras cada liberación";
             case "Compactación" -> "Procesos desplazados hacia arriba (renombrados) para agrupar el espacio libre";
             default             -> "Eventos de memoria variable";
@@ -77,7 +78,8 @@ public class HistorialMemoriaView {
         tablaEventos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tablaEventos.setPlaceholder(new Label("No hay eventos registrados."));
 
-        if (this.evento.equals(RegistroSimulacion.COMPACTACION)) {
+        if (this.evento.equals(RegistroSimulacion.DESPLAZAMIENTO)
+            || this.evento.equals(RegistroSimulacion.COMPACTACION)) {
             // Columna 1: Proceso — viene de nombreProceso()
             TableColumn<RegistroSimulacion.SnapshotMemoria, String> colProceso =
                 new TableColumn<>("Proceso");
