@@ -1,9 +1,22 @@
 package co.edu.uptc.processes1.view;
 
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Particion;
 import co.edu.uptc.processes1.model.Proceso;
 import co.edu.uptc.processes1.presenter.RegistroSimulacion;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -26,17 +39,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-
-import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class MainView implements IView {
 
@@ -65,7 +67,9 @@ public class MainView implements IView {
         RegistroSimulacion.EXPIRACION_TIEMPO,
         RegistroSimulacion.NO_EJECUTADO,
         RegistroSimulacion.FINALIZADO,
-        RegistroSimulacion.FINALIZACIONDEPARTICION
+        RegistroSimulacion.FINALIZACIONDEPARTICION,
+        RegistroSimulacion.CONDENSACION,
+        RegistroSimulacion.COMPACTACION
     };
 
     public MainView(Stage stage) {
@@ -107,6 +111,10 @@ public class MainView implements IView {
 
         stage.setScene(scene);
         stage.show();
+
+        if (presenter instanceof co.edu.uptc.processes1.presenter.SimuladorPresenter p) {
+        p.cargarDatosPredefinidos();
+    }
     }
 
     private HBox construirBarraTitulo() {
@@ -128,7 +136,9 @@ public class MainView implements IView {
         btnSalir.getStyleClass().add("btn-salir");
         btnSalir.setOnAction(e -> {
             ventanasHistorial.values().forEach(HistorialView::cerrar);
-            stage.close();
+    if (stageHistoriales != null) stageHistoriales.close();
+    stage.close();
+    System.exit(0); 
         });
 
         HBox acciones = new HBox(10, btnManual, btnSalir);
@@ -436,12 +446,6 @@ public class MainView implements IView {
         }
     }
 
-    // Enruta el evento de historial al presentador
-    private void notificarVerHistorial(String estado) {
-        if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)) return;
-        p.onVerHistorial(estado);
-    }
-
     private void notificarEliminarProceso(Proceso proceso) {
         if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p) || proceso == null) {
             return;
@@ -594,15 +598,17 @@ public class MainView implements IView {
     }
 
     @Override
-    public void mostrarHistorial(String estado, List<RegistroSimulacion.SnapshotProceso> datos) {
-        HistorialView historialView = ventanasHistorial.computeIfAbsent(estado, HistorialView::new);
-        if (presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p
-                && RegistroSimulacion.FINALIZADO.equalsIgnoreCase(estado)) {
-            historialView.mostrarConDatos(datos, p.getUsoParticiones(), p.getUltimoRegistro().getHistorialFinalizacionParticiones());
-            return;
-        }
-        historialView.mostrarConDatos(datos, List.of(), List.of());
-    }
+public void mostrarHistorial(
+        String estado, 
+        List<RegistroSimulacion.SnapshotProceso> datos,
+        List<RegistroSimulacion.UsoParticion> usosParticion,
+        List<RegistroSimulacion.FinalizacionParticionInfo> finalizacionParticiones) {
+    
+    HistorialView historialView = ventanasHistorial.computeIfAbsent(estado, HistorialView::new);
+    
+    // Siempre pasar todos los datos
+    historialView.mostrarConDatos(datos, usosParticion, finalizacionParticiones);
+}
 
     @Override
     public String getNombreProceso() {
@@ -755,7 +761,369 @@ public class MainView implements IView {
         stageHistoriales.show();
     }
 
+    private void mostrarFinalizacionParticiones(co.edu.uptc.processes1.presenter.IPresenter p) {
+    List<RegistroSimulacion.FinalizacionParticionInfo> finalizaciones = 
+        p.getUltimoRegistro().getHistorialFinalizacionParticiones();
+    
+    if (finalizaciones.isEmpty()) {
+        mostrarAviso("No hay particiones finalizadas para mostrar.");
+        return;
+    }
+    
+    // Crear ventana con el MISMO estilo que HistorialView
+    Stage stageFinalizacion = new Stage();
+    stageFinalizacion.initStyle(StageStyle.UNDECORATED);
+    
+    var bounds = Screen.getPrimary().getVisualBounds();
+    stageFinalizacion.setX(bounds.getMinX());
+    stageFinalizacion.setY(bounds.getMinY());
+    stageFinalizacion.setWidth(bounds.getWidth());
+    stageFinalizacion.setHeight(bounds.getHeight());
+    
+    // ── Barra superior (igual que HistorialView) ─────────────────
+    Label lblTitulo = new Label("Historial - Finalización de Particiones");
+    lblTitulo.getStyleClass().add("historial-titulo");
+    
+    Label lblSub = new Label("Particiones en el orden en que finalizaron sus procesos");
+    lblSub.getStyleClass().add("historial-subtitulo");
+    
+    VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
+    infoTitulo.setAlignment(Pos.CENTER_LEFT);
+    
+    Label lblContador = new Label(finalizaciones.size() + " particion(es)");
+    lblContador.getStyleClass().add("historial-contador");
+    
+    HBox barraTitulo = new HBox(16, infoTitulo);
+    barraTitulo.setAlignment(Pos.CENTER_LEFT);
+    HBox.setHgrow(barraTitulo, Priority.ALWAYS);
+    
+    HBox barra = new HBox(barraTitulo, lblContador);
+    barra.getStyleClass().add("historial-barra");
+    barra.setAlignment(Pos.CENTER_LEFT);
+    barra.setPadding(new Insets(24, 36, 24, 36));
+    
+    // Permitir arrastrar la ventana
+    barra.setOnMousePressed(e -> {
+        dragOffsetX = e.getSceneX();
+        dragOffsetY = e.getSceneY();
+    });
+    barra.setOnMouseDragged(e -> {
+        stageFinalizacion.setX(e.getScreenX() - dragOffsetX);
+        stageFinalizacion.setY(e.getScreenY() - dragOffsetY);
+    });
+    
+    // ── Tabla de finalización de particiones ─────────────────────
+    TableView<RegistroSimulacion.FinalizacionParticionInfo> tabla = new TableView<>();
+    tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    tabla.setPlaceholder(new Label("No hay particiones finalizadas."));
+    
+    TableColumn<RegistroSimulacion.FinalizacionParticionInfo, String> colParticion = 
+        new TableColumn<>("Partición");
+    colParticion.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().nombreParticion()));
+    colParticion.setPrefWidth(300);
+    
+    TableColumn<RegistroSimulacion.FinalizacionParticionInfo, String> colTamanio = 
+        new TableColumn<>("Tamaño");
+    colTamanio.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().tamanio().toString()));
+    colTamanio.setPrefWidth(300);
+    
+    tabla.getColumns().addAll(colParticion, colTamanio);
+    tabla.setItems(FXCollections.observableArrayList(finalizaciones));
+    
+    // ── Footer ───────────────────────────────────────────────────
+    Button btnVolver = new Button("Volver al Menu Principal");
+    btnVolver.getStyleClass().add("btn-volver");
+    btnVolver.setOnAction(e -> stageFinalizacion.close());
+    
+    HBox footer = new HBox(btnVolver);
+    footer.setAlignment(Pos.CENTER);
+    footer.setPadding(new Insets(30, 36, 40, 36));
+    footer.setStyle("-fx-background-color: #F0F7F9;");
+    
+    // ── Contenido principal ──────────────────────────────────────
+    VBox contenidoTabla = new VBox(tabla);
+    contenidoTabla.setPadding(new Insets(16, 36, 0, 36));
+    contenidoTabla.setStyle("-fx-background-color: #F0F7F9;");
+    VBox.setVgrow(contenidoTabla, Priority.ALWAYS);
+    VBox.setVgrow(tabla, Priority.ALWAYS);
+    
+    // ── Layout raíz ──────────────────────────────────────────────
+    VBox root = new VBox(barra, contenidoTabla, footer);
+    root.getStyleClass().add("historial-root");
+    VBox.setVgrow(contenidoTabla, Priority.ALWAYS);
+    
+    Scene scene = new Scene(root);
+    scene.setFill(Color.WHITE);
+    
+    var css = getClass().getResource("/css/Simulador.css");
+    if (css != null) scene.getStylesheets().add(css.toExternalForm());
+    
+    stageFinalizacion.setScene(scene);
+    stageFinalizacion.show();
+}
     public Stage getStage() {
         return stage;
     }
+
+    @Override
+public void mostrarCondensaciones(List<RegistroSimulacion.CondensacionInfo> condensaciones) {
+    if (condensaciones.isEmpty()) {
+        mostrarAviso("No hay condensaciones para mostrar.");
+        return;
+    }
+    
+    // Crear ventana con el MISMO estilo que HistorialView
+    Stage stageCondensaciones = new Stage();
+    stageCondensaciones.initStyle(StageStyle.UNDECORATED);
+    
+    var bounds = Screen.getPrimary().getVisualBounds();
+    stageCondensaciones.setX(bounds.getMinX());
+    stageCondensaciones.setY(bounds.getMinY());
+    stageCondensaciones.setWidth(bounds.getWidth());
+    stageCondensaciones.setHeight(bounds.getHeight());
+    
+    // Barra superior
+    Label lblTitulo = new Label("Historial - Condensadores");
+    lblTitulo.getStyleClass().add("historial-titulo");
+    
+    Label lblSub = new Label("Registro de condensaciones entre particiones adyacentes");
+    lblSub.getStyleClass().add("historial-subtitulo");
+    
+    VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
+    infoTitulo.setAlignment(Pos.CENTER_LEFT);
+    
+    Label lblContador = new Label(condensaciones.size() + " condensacion(es)");
+    lblContador.getStyleClass().add("historial-contador");
+    
+    HBox barraTitulo = new HBox(16, infoTitulo);
+    barraTitulo.setAlignment(Pos.CENTER_LEFT);
+    HBox.setHgrow(barraTitulo, Priority.ALWAYS);
+    
+    HBox barra = new HBox(barraTitulo, lblContador);
+    barra.getStyleClass().add("historial-barra");
+    barra.setAlignment(Pos.CENTER_LEFT);
+    barra.setPadding(new Insets(24, 36, 24, 36));
+    
+    barra.setOnMousePressed(e -> {
+        dragOffsetX = e.getSceneX();
+        dragOffsetY = e.getSceneY();
+    });
+    barra.setOnMouseDragged(e -> {
+        stageCondensaciones.setX(e.getScreenX() - dragOffsetX);
+        stageCondensaciones.setY(e.getScreenY() - dragOffsetY);
+    });
+    
+    // Tabla de condensaciones
+    TableView<RegistroSimulacion.CondensacionInfo> tabla = new TableView<>();
+    tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    tabla.setPlaceholder(new Label("No hay condensaciones registradas."));
+    
+    TableColumn<RegistroSimulacion.CondensacionInfo, String> colParticion = 
+        new TableColumn<>("Nueva Partición");
+    colParticion.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().nombreNuevaParticion()));
+    colParticion.setPrefWidth(200);
+    
+    TableColumn<RegistroSimulacion.CondensacionInfo, String> colDescripcion = 
+        new TableColumn<>("Descripción");
+    colDescripcion.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().descripcion()));
+    colDescripcion.setPrefWidth(400);
+    
+    TableColumn<RegistroSimulacion.CondensacionInfo, String> colTamanio = 
+        new TableColumn<>("Tamaño");
+    colTamanio.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().tamanio().toString()));
+    colTamanio.setPrefWidth(150);
+    
+    tabla.getColumns().addAll(colParticion, colDescripcion, colTamanio);
+    tabla.setItems(FXCollections.observableArrayList(condensaciones));
+    
+    // Footer
+    Button btnVolver = new Button("Volver al Menu Principal");
+    btnVolver.getStyleClass().add("btn-volver");
+    btnVolver.setOnAction(e -> stageCondensaciones.close());
+    
+    HBox footer = new HBox(btnVolver);
+    footer.setAlignment(Pos.CENTER);
+    footer.setPadding(new Insets(30, 36, 40, 36));
+    footer.setStyle("-fx-background-color: #F0F7F9;");
+    
+    // Contenido principal
+    VBox contenidoTabla = new VBox(tabla);
+    contenidoTabla.setPadding(new Insets(16, 36, 0, 36));
+    contenidoTabla.setStyle("-fx-background-color: #F0F7F9;");
+    VBox.setVgrow(contenidoTabla, Priority.ALWAYS);
+    VBox.setVgrow(tabla, Priority.ALWAYS);
+    
+    // Layout raíz
+    VBox root = new VBox(barra, contenidoTabla, footer);
+    root.getStyleClass().add("historial-root");
+    VBox.setVgrow(contenidoTabla, Priority.ALWAYS);
+    
+    Scene scene = new Scene(root);
+    scene.setFill(Color.WHITE);
+    
+    var css = getClass().getResource("/css/Simulador.css");
+    if (css != null) scene.getStylesheets().add(css.toExternalForm());
+    
+    stageCondensaciones.setScene(scene);
+    stageCondensaciones.show();
+}
+
+   private void notificarVerHistorial(String estado) {
+    if (!(presenter instanceof co.edu.uptc.processes1.presenter.IPresenter p)) return;
+    
+    if (RegistroSimulacion.FINALIZACIONDEPARTICION.equals(estado)) {
+        mostrarFinalizacionParticiones(p);
+        return;
+    }
+    
+    if (RegistroSimulacion.CONDENSACION.equals(estado)) {
+        mostrarCondensaciones(p.getUltimoRegistro().getHistorialCondensaciones());
+        return;
+    }
+    
+    if (RegistroSimulacion.COMPACTACION.equals(estado)) {
+        mostrarCompactaciones(p.getUltimoRegistro().getHistorialCompactaciones());
+        return;
+    }
+    
+    p.onVerHistorial(estado);
+}
+
+    @Override
+public void mostrarCompactaciones(List<RegistroSimulacion.CompactacionInfo> compactaciones) {
+    if (compactaciones.isEmpty()) {
+        mostrarAviso("No hay compactaciones para mostrar.");
+        return;
+    }
+    
+    // Crear ventana con el MISMO estilo que HistorialView
+    Stage stageCompactaciones = new Stage();
+    stageCompactaciones.initStyle(StageStyle.UNDECORATED);
+    
+    var bounds = Screen.getPrimary().getVisualBounds();
+    stageCompactaciones.setX(bounds.getMinX());
+    stageCompactaciones.setY(bounds.getMinY());
+    stageCompactaciones.setWidth(bounds.getWidth());
+    stageCompactaciones.setHeight(bounds.getHeight());
+    
+    // Barra superior
+    Label lblTitulo = new Label("Historial - Compactaciones");
+    lblTitulo.getStyleClass().add("historial-titulo");
+    
+    Label lblSub = new Label("Registro de compactaciones realizadas en la memoria");
+    lblSub.getStyleClass().add("historial-subtitulo");
+    
+    VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
+    infoTitulo.setAlignment(Pos.CENTER_LEFT);
+    
+    Label lblContador = new Label(compactaciones.size() + " compactacion(es)");
+    lblContador.getStyleClass().add("historial-contador");
+    
+    HBox barraTitulo = new HBox(16, infoTitulo);
+    barraTitulo.setAlignment(Pos.CENTER_LEFT);
+    HBox.setHgrow(barraTitulo, Priority.ALWAYS);
+    
+    HBox barra = new HBox(barraTitulo, lblContador);
+    barra.getStyleClass().add("historial-barra");
+    barra.setAlignment(Pos.CENTER_LEFT);
+    barra.setPadding(new Insets(24, 36, 24, 36));
+    
+    barra.setOnMousePressed(e -> {
+        dragOffsetX = e.getSceneX();
+        dragOffsetY = e.getSceneY();
+    });
+    barra.setOnMouseDragged(e -> {
+        stageCompactaciones.setX(e.getScreenX() - dragOffsetX);
+        stageCompactaciones.setY(e.getScreenY() - dragOffsetY);
+    });
+    
+    // Tabla de compactaciones
+    TableView<RegistroSimulacion.CompactacionInfo> tabla = new TableView<>();
+    tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    tabla.setPlaceholder(new Label("No hay compactaciones registradas."));
+    
+    TableColumn<RegistroSimulacion.CompactacionInfo, String> colNombre = 
+        new TableColumn<>("Nombre");
+    colNombre.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().nombreNuevaParticion()));
+    colNombre.setPrefWidth(100);
+    
+    TableColumn<RegistroSimulacion.CompactacionInfo, String> colDescripcion = 
+        new TableColumn<>("Descripción");
+    colDescripcion.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().descripcion()));
+    colDescripcion.setPrefWidth(300);
+    
+    TableColumn<RegistroSimulacion.CompactacionInfo, String> colTamanio = 
+        new TableColumn<>("Tamaño");
+    colTamanio.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().tamanio().toString()));
+    colTamanio.setPrefWidth(80);
+    
+    TableColumn<RegistroSimulacion.CompactacionInfo, String> colInicio = 
+        new TableColumn<>("Dir. Inicio");
+    colInicio.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().direccionInicio().toString()));
+    colInicio.setPrefWidth(80);
+    
+    TableColumn<RegistroSimulacion.CompactacionInfo, String> colFin = 
+        new TableColumn<>("Dir. Fin");
+    colFin.setCellValueFactory(cell -> 
+        new SimpleStringProperty(cell.getValue().direccionFin().toString()));
+    colFin.setPrefWidth(80);
+    
+    tabla.getColumns().addAll(colNombre, colDescripcion, colTamanio, colInicio, colFin);
+    
+    // Ordenar por el número de partición (PAR8 antes que PAR10)
+List<RegistroSimulacion.CompactacionInfo> compactacionesOrdenadas = new ArrayList<>(compactaciones);
+compactacionesOrdenadas.sort((a, b) -> {
+    int numA = extraerNumero(a.nombreNuevaParticion());
+    int numB = extraerNumero(b.nombreNuevaParticion());
+    return Integer.compare(numA, numB);
+});
+
+tabla.setItems(FXCollections.observableArrayList(compactacionesOrdenadas));
+    
+    // Footer
+    Button btnVolver = new Button("Volver al Menu Principal");
+    btnVolver.getStyleClass().add("btn-volver");
+    btnVolver.setOnAction(e -> stageCompactaciones.close());
+    
+    HBox footer = new HBox(btnVolver);
+    footer.setAlignment(Pos.CENTER);
+    footer.setPadding(new Insets(30, 36, 40, 36));
+    footer.setStyle("-fx-background-color: #F0F7F9;");
+    
+    // Contenido principal
+    VBox contenidoTabla = new VBox(tabla);
+    contenidoTabla.setPadding(new Insets(16, 36, 0, 36));
+    contenidoTabla.setStyle("-fx-background-color: #F0F7F9;");
+    VBox.setVgrow(contenidoTabla, Priority.ALWAYS);
+    VBox.setVgrow(tabla, Priority.ALWAYS);
+    
+    // Layout raíz
+    VBox root = new VBox(barra, contenidoTabla, footer);
+    root.getStyleClass().add("historial-root");
+    VBox.setVgrow(contenidoTabla, Priority.ALWAYS);
+    
+    Scene scene = new Scene(root);
+    scene.setFill(Color.WHITE);
+    
+    var css = getClass().getResource("/css/Simulador.css");
+    if (css != null) scene.getStylesheets().add(css.toExternalForm());
+    
+    stageCompactaciones.setScene(scene);
+    stageCompactaciones.show();
+}
+
+    private int extraerNumero(String nombre) {
+    String digitos = nombre.replaceAll("\\D+", "");
+    return digitos.isEmpty() ? 0 : Integer.parseInt(digitos);
+}
+
 }

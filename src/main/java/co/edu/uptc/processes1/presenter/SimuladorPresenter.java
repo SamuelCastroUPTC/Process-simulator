@@ -1,9 +1,5 @@
 package co.edu.uptc.processes1.presenter;
 
-import co.edu.uptc.processes1.model.MemoriaVariable;
-import co.edu.uptc.processes1.model.Proceso;
-import co.edu.uptc.processes1.view.IView;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import co.edu.uptc.processes1.model.MemoriaVariable;
+import co.edu.uptc.processes1.model.Proceso;
+import co.edu.uptc.processes1.view.IView;
 
 public class SimuladorPresenter implements IPresenter {
 
@@ -71,29 +71,28 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
-    public RegistroSimulacion iniciarSimulacion() {
-        if (procesosCargados.isEmpty()) {
-            view.mostrarError("No hay procesos en la cola. Cargue al menos uno antes de simular.");
-            return ultimoRegistro;
-        }
-
-        view.setBtnIniciarHabilitado(false);
-        view.actualizarEstadoSimulacion("Simulacion en progreso...");
-
-        List<Proceso> procesosOrdenados = new ArrayList<>(procesosCargados);
-
-        ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados, memoriaVariable);
-        sincronizarHistorialesConRegistro(ultimoRegistro);
-
-        procesosCargados.clear();
-    this.memoriaVariable = recalcularMemoria();
-
-        view.actualizarTablaCargados(new ArrayList<>());
-        view.actualizarEstadoMemoria(memoriaVariable);
-        view.actualizarEstadoSimulacion("Simulacion finalizada.");
-        view.mostrarExito("Simulacion completada. Puede revisar el historial por estado.");
+public RegistroSimulacion iniciarSimulacion() {
+    if (procesosCargados.isEmpty()) {
+        view.mostrarError("No hay procesos en la cola. Cargue al menos uno antes de simular.");
         return ultimoRegistro;
     }
+
+    view.setBtnIniciarHabilitado(false);
+    view.actualizarEstadoSimulacion("Simulacion en progreso...");
+
+    List<Proceso> procesosOrdenados = new ArrayList<>(procesosCargados);
+
+    // CAMBIO: Ya no pasamos memoriaVariable
+    ultimoRegistro = motorSimulacion.ejecutar(procesosOrdenados);
+    sincronizarHistorialesConRegistro(ultimoRegistro);
+
+    procesosCargados.clear();
+
+    view.actualizarTablaCargados(new ArrayList<>());
+    view.actualizarEstadoSimulacion("Simulacion finalizada.");
+    view.mostrarExito("Simulacion completada. Puede revisar el historial por estado.");
+    return ultimoRegistro;
+}
 
     @Override
     public List<Proceso> getProcesosCargados() {
@@ -211,11 +210,24 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     @Override
-    public void onVerHistorial(String estado) {
-        String estadoCanonico = normalizarEstado(estado);
-        List<RegistroSimulacion.SnapshotProceso> datos = historialesPorEstado.getOrDefault(estadoCanonico, List.of());
-        view.mostrarHistorial(estado, datos);
+public void onVerHistorial(String estado) {
+    // La finalización de particiones se maneja directamente en MainView
+    if (RegistroSimulacion.FINALIZACIONDEPARTICION.equals(estado)) {
+        return; // No hacer nada, MainView lo maneja
     }
+    
+    String estadoCanonico = normalizarEstado(estado);
+    List<RegistroSimulacion.SnapshotProceso> datos = 
+        historialesPorEstado.getOrDefault(estadoCanonico, List.of());
+    
+    view.mostrarHistorial(
+        estado, 
+        datos,
+        ultimoRegistro.getUsoParticiones(),
+        ultimoRegistro.getHistorialFinalizacionParticiones()
+    );
+}
+    
 
     public Map<String, List<String>> getHistorialTexto() {
         return ultimoRegistro.getHistorialTexto();
@@ -246,12 +258,19 @@ public class SimuladorPresenter implements IPresenter {
     }
 
     private void sincronizarHistorialesConRegistro(RegistroSimulacion registro) {
-        historialesPorEstado.values().forEach(List::clear);
-        for (String estado : ESTADOS) {
-            historialesPorEstado.put(estado, registro.getHistorialProcesos(estado));
+    // Limpiar las listas existentes
+    for (List<RegistroSimulacion.SnapshotProceso> lista : historialesPorEstado.values()) {
+        lista.clear();
+    }
+    
+    // Llenar con los nuevos datos
+    for (String estado : ESTADOS) {
+        List<RegistroSimulacion.SnapshotProceso> datos = registro.getHistorialProcesos(estado);
+        if (datos != null && !datos.isEmpty()) {
+            historialesPorEstado.get(estado).addAll(datos);
         }
     }
-
+}
     private String normalizarEstado(String estado) {
         if (estado == null || estado.isBlank()) {
             return RegistroSimulacion.INICIO;
@@ -273,4 +292,30 @@ public class SimuladorPresenter implements IPresenter {
         return (s == null) ? "" : s.replaceAll("[^\\d]", "").trim();
     }
 
+    // En SimuladorPresenter.java
+@Override
+public List<RegistroSimulacion.CondensacionInfo> getCondensaciones() {
+    return ultimoRegistro.getHistorialCondensaciones();
+}
+
+    // En SimuladorPresenter.java
+@Override
+public List<RegistroSimulacion.CompactacionInfo> getCompactaciones() {
+    return ultimoRegistro.getHistorialCompactaciones();
+}
+
+    public void cargarDatosPredefinidos() {
+    // Limpiar procesos existentes
+    procesosCargados.clear();
+    contadorId = 1;
+    
+    // Cargar los 7 procesos predefinidos
+    // agregarProceso("P15", BigInteger.valueOf(3).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(15));
+    // agregarProceso("P13", BigInteger.valueOf(5).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(13));
+    // agregarProceso("P4", BigInteger.valueOf(2).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(4));
+    // agregarProceso("P12", BigInteger.valueOf(4).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(12));
+    // agregarProceso("P18", BigInteger.valueOf(6).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(18));
+    // agregarProceso("P5", BigInteger.valueOf(7).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(5));
+    // agregarProceso("P8", BigInteger.valueOf(3).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(8));
+}
 }

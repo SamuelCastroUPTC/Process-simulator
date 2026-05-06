@@ -1,23 +1,34 @@
 package co.edu.uptc.processes1.view;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+
 import co.edu.uptc.processes1.model.Proceso;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * FormProcces — Modal UNDECORATED para crear un proceso.
@@ -225,12 +236,18 @@ public class FormProcces {
         });
 
         Scene scene = new Scene(overlay, screenBounds.getWidth(), screenBounds.getHeight());
-        scene.setFill(Color.TRANSPARENT);
-        scene.setOnKeyPressed(e -> {
-            if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
-                modalStage.close();
-            }
-        });
+scene.setFill(Color.TRANSPARENT);
+scene.setOnKeyPressed(e -> {
+    if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+        modalStage.close();
+    } else if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
+        // Activar el botón Cargar Proceso
+        if (onCargar != null) {
+            onCargar.run();
+        }
+        e.consume();
+    }
+});
 
         var css = getClass().getResource("/css/Simulador.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());

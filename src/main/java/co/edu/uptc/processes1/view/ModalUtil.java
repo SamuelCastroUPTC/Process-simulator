@@ -15,14 +15,6 @@ public class ModalUtil {
 
     public enum TipoModal { ERROR, EXITO, INFO }
 
-    /**
-     * Muestra un modal bloqueante personalizado.
-     *
-     * @param owner    Ventana propietaria (para centrarlo)
-     * @param tipo     ERROR | EXITO | INFO
-     * @param titulo   Ti­tulo del modal
-     * @param mensaje  Cuerpo del mensaje
-     */
     public static void mostrar(Window owner, TipoModal tipo, String titulo, String mensaje) {
 
         Stage modal = new Stage();
@@ -83,7 +75,6 @@ public class ModalUtil {
         overlay.setStyle("-fx-background-color: rgba(30, 30, 30, 0.40);");
         overlay.setPrefSize(520, 420);
 
-        // Cerrar al clicar fuera de la tarjeta
         overlay.setOnMouseClicked(e -> {
             if (e.getTarget() == overlay) modal.close();
         });
@@ -93,10 +84,11 @@ public class ModalUtil {
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
                 modal.close();
+            } else if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                btnOk.fire(); // Activar botón Aceptar con Enter
             }
         });
 
-        // Cargar CSS
         var css = ModalUtil.class.getResource("/css/Simulador.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());
 
@@ -116,13 +108,6 @@ public class ModalUtil {
         mostrar(owner, TipoModal.INFO, titulo, mensaje);
     }
 
-    /**
-     * Muestra un modal de confirmación bloqueante.
-     *
-     * @param owner   Ventana propietaria (para centrarlo)
-     * @param mensaje Mensaje de confirmación
-     * @return true si el usuario presiona "Confirmar", false si presiona "Cancelar"
-     */
     public static boolean confirmar(Window owner, String mensaje) {
         Stage modal = new Stage();
         modal.initOwner(owner);
@@ -130,7 +115,6 @@ public class ModalUtil {
         modal.initStyle(StageStyle.TRANSPARENT);
         modal.setResizable(false);
 
-        // Contenedor para el resultado
         boolean[] resultado = { false };
 
         Label lblMensaje = new Label(mensaje);
@@ -179,7 +163,6 @@ public class ModalUtil {
         overlay.setStyle("-fx-background-color: rgba(30, 30, 30, 0.40);");
         overlay.setPrefSize(520, 420);
 
-        // Cerrar al clicar fuera de la tarjeta
         overlay.setOnMouseClicked(e -> {
             if (e.getTarget() == overlay) modal.close();
         });
@@ -189,10 +172,12 @@ public class ModalUtil {
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
                 modal.close();
+            } else if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                resultado[0] = true; // Enter = confirmar (Sí)
+                modal.close();
             }
         });
 
-        // Cargar CSS
         var css = ModalUtil.class.getResource("/css/Simulador.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());
 
