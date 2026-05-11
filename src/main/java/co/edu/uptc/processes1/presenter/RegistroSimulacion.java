@@ -9,14 +9,6 @@ import java.util.Map;
 
 import co.edu.uptc.processes1.model.Proceso;
 
-/**
- * Historial organizado por estado para la simulacion.
- *
- * historialTexto: columna -> entradas formateadas (ej. "P1 (10) B").
- * historialProcesos: columna -> snapshots de proceso para mostrar en tablas.
- */
-
-    
 public class RegistroSimulacion {
 
     // ==========================================
@@ -30,7 +22,6 @@ public class RegistroSimulacion {
             BigInteger tiempoCpu
     ) {}
 
-    // ¡NUEVO RECORD! Para los eventos de memoria
     public record SnapshotMemoria(
             String evento,
             String nombreProceso,
@@ -53,19 +44,34 @@ public class RegistroSimulacion {
     ) {}
 
     public record CondensacionInfo(
-    String nombreNuevaParticion,
-    String descripcion,
-    BigInteger tamanio
-) {}
+        String nombreNuevaParticion,
+        String descripcion,
+        BigInteger tamanio
+    ) {}
 
     public record CompactacionInfo(
-    String nombreNuevaParticion,
-    String nombreParticionOriginal,
-    String descripcion,
-    BigInteger tamanio,
-    BigInteger direccionInicio,
-    BigInteger direccionFin
-) {}
+        String nombreNuevaParticion,
+        String nombreParticionOriginal,
+        String descripcion,
+        BigInteger tamanio,
+        BigInteger direccionInicio,
+        BigInteger direccionFin
+    ) {}
+
+    public record FinalizacionParticionInfo(
+        String nombreParticion,
+        BigInteger tamanio
+    ) {}
+
+    // NUEVO RECORD para cambios de partición
+    public record CambioParticionInfo(
+        int idProceso,
+        String nombreProceso,
+        String nombreParticion,
+        BigInteger direccionInicio,
+        BigInteger direccionFin,
+        String momento
+    ) {}
 
     // ==========================================
     // 2. CONSTANTES DE ESTADOS
@@ -79,8 +85,7 @@ public class RegistroSimulacion {
     public static final String FINALIZACIONDEPARTICION = "Finalizacion de Particion";
     public static final String CONDENSACION = "Condensacion";
     public static final String COMPACTACION = "Compactacion";
-
-     // Lista de estados en orden para mostrar en la vista
+    public static final String HISTORIALPROCESO = "Historial de Procesos";
 
     // ==========================================
     // 3. MAPAS DE HISTORIAL (Variables de clase)
@@ -91,9 +96,8 @@ public class RegistroSimulacion {
     private final List<FinalizacionParticionInfo> historialFinalizacionParticiones;
     private final List<CondensacionInfo> historialCondensaciones;
     private final List<CompactacionInfo> historialCompactaciones;
-    
-    // ¡NUEVO MAPA! Para el historial de memoria
     private final Map<String, List<SnapshotMemoria>> historialMemoria;
+    private final Map<Integer, List<CambioParticionInfo>> historialCambiosParticion;
 
     // ==========================================
     // 4. CONSTRUCTOR
@@ -106,6 +110,7 @@ public class RegistroSimulacion {
         this.historialFinalizacionParticiones = new ArrayList<>();
         this.historialCondensaciones = new ArrayList<>();
         this.historialCompactaciones = new ArrayList<>();
+        this.historialCambiosParticion = new LinkedHashMap<>();
     }
 
     // ==========================================
@@ -158,10 +163,33 @@ public class RegistroSimulacion {
     }
 
     public void registrarFinalizacionParticion(String nombreParticion, BigInteger tamanio) {
-    historialFinalizacionParticiones.add(
-        new FinalizacionParticionInfo(nombreParticion, tamanio)
-    );
-}
+        historialFinalizacionParticiones.add(
+            new FinalizacionParticionInfo(nombreParticion, tamanio)
+        );
+    }
+
+    // Método para registrar condensación
+    public void registrarCondensacion(String nombreParticion, String descripcion, BigInteger tamanio) {
+        historialCondensaciones.add(new CondensacionInfo(nombreParticion, descripcion, tamanio));
+    }
+
+    // Método para registrar compactación
+    public void registrarCompactacion(String nombreNuevaParticion, String nombreOriginal, 
+                                       String descripcion, BigInteger tamanio,
+                                       BigInteger direccionInicio, BigInteger direccionFin) {
+        historialCompactaciones.add(new CompactacionInfo(nombreNuevaParticion, nombreOriginal, 
+            descripcion, tamanio, direccionInicio, direccionFin));
+    }
+
+    // NUEVO: Registrar cambio de partición de un proceso
+    public void registrarCambioParticion(int idProceso, String nombreProceso, 
+                                          String nombreParticion, BigInteger dirInicio, 
+                                          BigInteger dirFin, String momento) {
+        historialCambiosParticion
+            .computeIfAbsent(idProceso, k -> new ArrayList<>())
+            .add(new CambioParticionInfo(idProceso, nombreProceso, nombreParticion, 
+                  dirInicio, dirFin, momento));
+    }
 
     // ==========================================
     // 6. GETTERS Y UTILIDADES
@@ -185,7 +213,6 @@ public class RegistroSimulacion {
     public void copiarEstado(String estadoOrigen, String estadoDestino) {
         List<String> origenTexto = historialTexto.getOrDefault(estadoOrigen, List.of());
         List<SnapshotProceso> origenProcesos = historialProcesos.getOrDefault(estadoOrigen, List.of());
-
         historialTexto.put(estadoDestino, new ArrayList<>(origenTexto));
         historialProcesos.put(estadoDestino, new ArrayList<>(origenProcesos));
     }
@@ -202,38 +229,28 @@ public class RegistroSimulacion {
         return Collections.unmodifiableList(historialFinalizacionParticiones);
     }
 
-    // ¡NUEVO MÉTODO! Para obtener el historial de memoria
     public List<SnapshotMemoria> getHistorialMemoria(String evento) {
         return Collections.unmodifiableList(
                 historialMemoria.getOrDefault(evento, List.of())
         );
     }
 
-    public record FinalizacionParticionInfo(
-    String nombreParticion,
-    BigInteger tamanio
-) {}
+    public List<CondensacionInfo> getHistorialCondensaciones() {
+        return Collections.unmodifiableList(historialCondensaciones);
+    }
 
-// Método para registrar condensación
-public void registrarCondensacion(String nombreParticion, String descripcion, BigInteger tamanio) {
-    historialCondensaciones.add(new CondensacionInfo(nombreParticion, descripcion, tamanio));
-}
+    public List<CompactacionInfo> getHistorialCompactaciones() {
+        return Collections.unmodifiableList(historialCompactaciones);
+    }
 
-// Getter
-public List<CondensacionInfo> getHistorialCondensaciones() {
-    return Collections.unmodifiableList(historialCondensaciones);
-}
+    // NUEVOS GETTERS para cambios de partición
+    public List<CambioParticionInfo> getHistorialCambiosParticion(int idProceso) {
+        return Collections.unmodifiableList(
+            historialCambiosParticion.getOrDefault(idProceso, List.of())
+        );
+    }
 
-    // Método para registrar compactación
-    public void registrarCompactacion(String nombreNuevaParticion, String nombreOriginal, 
-                                   String descripcion, BigInteger tamanio,
-                                   BigInteger direccionInicio, BigInteger direccionFin) {
-    historialCompactaciones.add(new CompactacionInfo(nombreNuevaParticion, nombreOriginal, 
-        descripcion, tamanio, direccionInicio, direccionFin));
-}
-
-// Getter
-public List<CompactacionInfo> getHistorialCompactaciones() {
-    return Collections.unmodifiableList(historialCompactaciones);
-}
+    public Map<Integer, List<CambioParticionInfo>> getTodosCambiosParticion() {
+        return Collections.unmodifiableMap(historialCambiosParticion);
+    }
 }

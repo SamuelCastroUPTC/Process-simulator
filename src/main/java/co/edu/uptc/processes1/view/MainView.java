@@ -24,6 +24,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -69,7 +71,8 @@ public class MainView implements IView {
         RegistroSimulacion.FINALIZADO,
         RegistroSimulacion.FINALIZACIONDEPARTICION,
         RegistroSimulacion.CONDENSACION,
-        RegistroSimulacion.COMPACTACION
+        RegistroSimulacion.COMPACTACION,
+        RegistroSimulacion.HISTORIALPROCESO
     };
 
     public MainView(Stage stage) {
@@ -990,6 +993,11 @@ public void mostrarCondensaciones(List<RegistroSimulacion.CondensacionInfo> cond
         mostrarCompactaciones(p.getUltimoRegistro().getHistorialCompactaciones());
         return;
     }
+
+    if (RegistroSimulacion.HISTORIALPROCESO.equals(estado)) {
+    mostrarHistorialPorProceso(p.getUltimoRegistro().getTodosCambiosParticion());
+    return;
+}
     
     p.onVerHistorial(estado);
 }
@@ -1124,6 +1132,137 @@ tabla.setItems(FXCollections.observableArrayList(compactacionesOrdenadas));
     private int extraerNumero(String nombre) {
     String digitos = nombre.replaceAll("\\D+", "");
     return digitos.isEmpty() ? 0 : Integer.parseInt(digitos);
+}
+
+@Override
+public void mostrarHistorialPorProceso(
+        Map<Integer, List<RegistroSimulacion.CambioParticionInfo>> cambios) {
+    
+    if (cambios.isEmpty()) {
+        mostrarAviso("No hay historial de procesos para mostrar.");
+        return;
+    }
+    
+    Stage stageHistorial = new Stage();
+    stageHistorial.initStyle(StageStyle.UNDECORATED);
+    
+    var bounds = Screen.getPrimary().getVisualBounds();
+    stageHistorial.setX(bounds.getMinX());
+    stageHistorial.setY(bounds.getMinY());
+    stageHistorial.setWidth(bounds.getWidth());
+    stageHistorial.setHeight(bounds.getHeight());
+    
+    // Barra superior
+    Label lblTitulo = new Label("Historial - Por Proceso");
+    lblTitulo.getStyleClass().add("historial-titulo");
+    
+    Label lblSub = new Label("Particiones ocupadas por cada proceso durante la simulación");
+    lblSub.getStyleClass().add("historial-subtitulo");
+    
+    VBox infoTitulo = new VBox(4, lblTitulo, lblSub);
+    infoTitulo.setAlignment(Pos.CENTER_LEFT);
+    
+    HBox barraTitulo = new HBox(16, infoTitulo);
+    barraTitulo.setAlignment(Pos.CENTER_LEFT);
+    HBox.setHgrow(barraTitulo, Priority.ALWAYS);
+    
+    HBox barra = new HBox(barraTitulo);
+    barra.getStyleClass().add("historial-barra");
+    barra.setAlignment(Pos.CENTER_LEFT);
+    barra.setPadding(new Insets(24, 36, 24, 36));
+    
+    barra.setOnMousePressed(e -> {
+        dragOffsetX = e.getSceneX();
+        dragOffsetY = e.getSceneY();
+    });
+    barra.setOnMouseDragged(e -> {
+        stageHistorial.setX(e.getScreenX() - dragOffsetX);
+        stageHistorial.setY(e.getScreenY() - dragOffsetY);
+    });
+    
+    // TabPane con pestañas por proceso
+    TabPane tabPane = new TabPane();
+    tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+    
+    for (Map.Entry<Integer, List<RegistroSimulacion.CambioParticionInfo>> entry : cambios.entrySet()) {
+        List<RegistroSimulacion.CambioParticionInfo> cambiosProceso = entry.getValue();
+        if (cambiosProceso.isEmpty()) continue;
+        
+        String nombreProceso = cambiosProceso.get(0).nombreProceso();
+        
+        TableView<RegistroSimulacion.CambioParticionInfo> tabla = new TableView<>();
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        TableColumn<RegistroSimulacion.CambioParticionInfo, String> colParticion = 
+            new TableColumn<>("Partición");
+        colParticion.setCellValueFactory(cell -> 
+            new SimpleStringProperty(cell.getValue().nombreParticion()));
+        colParticion.setPrefWidth(150);
+        
+        TableColumn<RegistroSimulacion.CambioParticionInfo, String> colInicio = 
+            new TableColumn<>("Dir. Inicio");
+        colInicio.setCellValueFactory(cell -> 
+            new SimpleStringProperty(cell.getValue().direccionInicio().toString()));
+        colInicio.setPrefWidth(100);
+        
+        TableColumn<RegistroSimulacion.CambioParticionInfo, String> colFin = 
+            new TableColumn<>("Dir. Fin");
+        colFin.setCellValueFactory(cell -> 
+            new SimpleStringProperty(cell.getValue().direccionFin().toString()));
+        colFin.setPrefWidth(100);
+        
+        TableColumn<RegistroSimulacion.CambioParticionInfo, String> colMomento = 
+            new TableColumn<>("Momento");
+        colMomento.setCellValueFactory(cell -> 
+            new SimpleStringProperty(cell.getValue().momento()));
+        colMomento.setPrefWidth(150);
+        
+        tabla.getColumns().addAll(colParticion, colInicio, colFin, colMomento);
+        tabla.setItems(FXCollections.observableArrayList(cambiosProceso));
+        
+        Tab tab = new Tab(nombreProceso);
+        tab.setContent(envolverTabla(tabla));
+        tab.setClosable(false);
+        tabPane.getTabs().add(tab);
+    }
+    
+    // Footer
+    Button btnVolver = new Button("Volver al Menu Principal");
+    btnVolver.getStyleClass().add("btn-volver");
+    btnVolver.setOnAction(e -> stageHistorial.close());
+    
+    HBox footer = new HBox(btnVolver);
+    footer.setAlignment(Pos.CENTER);
+    footer.setPadding(new Insets(30, 36, 40, 36));
+    footer.setStyle("-fx-background-color: #F0F7F9;");
+    
+    VBox contenido = new VBox(tabPane);
+    contenido.setPadding(new Insets(16, 36, 0, 36));
+    contenido.setStyle("-fx-background-color: #F0F7F9;");
+    VBox.setVgrow(contenido, Priority.ALWAYS);
+    VBox.setVgrow(tabPane, Priority.ALWAYS);
+    
+    VBox root = new VBox(barra, contenido, footer);
+    root.getStyleClass().add("historial-root");
+    VBox.setVgrow(contenido, Priority.ALWAYS);
+    
+    Scene scene = new Scene(root);
+    scene.setFill(Color.WHITE);
+    
+    var css = getClass().getResource("/css/Simulador.css");
+    if (css != null) scene.getStylesheets().add(css.toExternalForm());
+    
+    stageHistorial.setScene(scene);
+    stageHistorial.show();
+}
+
+// Método auxiliar para envolver tabla
+private VBox envolverTabla(TableView<?> tabla) {
+    VBox wrapper = new VBox(tabla);
+    VBox.setVgrow(tabla, Priority.ALWAYS);
+    tabla.setMaxHeight(Double.MAX_VALUE);
+    wrapper.setStyle("-fx-background-color: transparent;");
+    return wrapper;
 }
 
 }

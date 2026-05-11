@@ -310,12 +310,12 @@ public List<RegistroSimulacion.CompactacionInfo> getCompactaciones() {
     contadorId = 1;
     
     // Cargar los 7 procesos predefinidos
-    // agregarProceso("P15", BigInteger.valueOf(3).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(15));
-    // agregarProceso("P13", BigInteger.valueOf(5).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(13));
-    // agregarProceso("P4", BigInteger.valueOf(2).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(4));
-    // agregarProceso("P12", BigInteger.valueOf(4).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(12));
-    // agregarProceso("P18", BigInteger.valueOf(6).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(18));
-    // agregarProceso("P5", BigInteger.valueOf(7).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(5));
-    // agregarProceso("P8", BigInteger.valueOf(3).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(8));
+    agregarProceso("P15", BigInteger.valueOf(3).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(15));
+    agregarProceso("P13", BigInteger.valueOf(5).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(13));
+    agregarProceso("P4", BigInteger.valueOf(2).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(4));
+    agregarProceso("P12", BigInteger.valueOf(4).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(12));
+    agregarProceso("P18", BigInteger.valueOf(6).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(18));
+    agregarProceso("P5", BigInteger.valueOf(7).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(5));
+    agregarProceso("P8", BigInteger.valueOf(3).multiply(BigInteger.valueOf(1000)), BigInteger.valueOf(8));
 }
 }

@@ -1,6 +1,7 @@
 package co.edu.uptc.processes1.view;
 
 import java.util.List;
+import java.util.Map;
 
 import co.edu.uptc.processes1.model.MemoriaVariable;
 import co.edu.uptc.processes1.model.Proceso;
@@ -21,6 +22,9 @@ public interface IView {
     // ── Simulación ────────────────────────────────────────────────────────────
     void setBtnIniciarHabilitado(boolean habilitado);
     void actualizarEstadoSimulacion(String estado);
+
+    void mostrarHistorialPorProceso(Map<Integer, List<RegistroSimulacion.CambioParticionInfo>> cambios);
+
 
     // ── Historial por Estado ──────────────────────────────────────────────────
     
@@ -52,3 +56,4 @@ void mostrarCondensaciones(List<RegistroSimulacion.CondensacionInfo> condensacio
     // En IView.java
 void mostrarCompactaciones(List<RegistroSimulacion.CompactacionInfo> compactaciones);
 }
+

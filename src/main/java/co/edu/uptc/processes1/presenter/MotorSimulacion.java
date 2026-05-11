@@ -10,7 +10,7 @@ import co.edu.uptc.processes1.model.Proceso;
 public class MotorSimulacion {
 
     private static final BigInteger QUANTUM = BigInteger.valueOf(1000L);
-    private static final BigInteger DIRECCION_BASE = BigInteger.TEN; // Empieza en 10
+    private static final BigInteger DIRECCION_BASE = BigInteger.ZERO; // Empieza en 10
 
     public RegistroSimulacion ejecutar(List<Proceso> procesosIniciales) {
     RegistroSimulacion registro = new RegistroSimulacion();
@@ -101,13 +101,22 @@ public class MotorSimulacion {
             // Actualizar referencias de procesos después de compactación
             for (ProcesoRuntime proceso : colaListos) {
                 if (proceso.particionAsignada != null && !proceso.particionAsignada.libre) {
-                    for (ParticionInfo p : particiones) {
-                        if (!p.libre && p.idProceso == proceso.id) {
-                            proceso.particionAsignada = p;
-                            break;
-                        }
-                    }
+        String nombreAnterior = proceso.particionAsignada.nombre;
+        for (ParticionInfo p : particiones) {
+            if (!p.libre && p.idProceso == proceso.id) {
+                // Si cambió la partición, registrar
+                if (!nombreAnterior.equals(p.nombre)) {
+                    registro.registrarCambioParticion(
+                        proceso.id, proceso.nombre,
+                        p.nombre, p.direccionInicio, p.direccionFin,
+                        "COMPACTACION"
+                    );
                 }
+                proceso.particionAsignada = p;
+                break;
+            }
+        }
+    }
             }
         }
     }
@@ -128,28 +137,40 @@ public class MotorSimulacion {
     }
 
     private void registrarEstado(RegistroSimulacion registro, String estado, 
-                                 ProcesoRuntime runtime, BigInteger tiempoSnapshot) {
-        Proceso snapshot = new Proceso(
+                             ProcesoRuntime runtime, BigInteger tiempoSnapshot) {
+    Proceso snapshot = new Proceso(
+        runtime.id,
+        runtime.nombre,
+        runtime.tiempoRestante,
+        runtime.tamanioMemoria
+    );
+    snapshot.setTiempoRestante(tiempoSnapshot);
+    snapshot.setEstadoActual(estado);
+    
+    if (runtime.particionAsignada != null) {
+        snapshot.setParticion(new Particion(
+            extraerIdParticion(runtime.particionAsignada.nombre),
+            runtime.particionAsignada.direccionInicio,
+            runtime.tamanioMemoria,
             runtime.id,
-            runtime.nombre,
-            runtime.tiempoRestante,
-            runtime.tamanioMemoria
-        );
-        snapshot.setTiempoRestante(tiempoSnapshot);
-        snapshot.setEstadoActual(estado);
+            runtime.nombre
+        ));
         
-        if (runtime.particionAsignada != null) {
-            snapshot.setParticion(new Particion(
-                extraerIdParticion(runtime.particionAsignada.nombre),
-                runtime.particionAsignada.direccionInicio,
-                runtime.tamanioMemoria,
+        // Registrar SOLO en INICIO para tener una entrada por proceso
+        if (estado.equals(RegistroSimulacion.INICIO)) {
+            registro.registrarCambioParticion(
                 runtime.id,
-                runtime.nombre
-            ));
+                runtime.nombre,
+                runtime.particionAsignada.nombre,
+                runtime.particionAsignada.direccionInicio,
+                runtime.particionAsignada.direccionFin,
+                estado
+            );
         }
-        
-        registro.registrar(estado, snapshot);
     }
+    
+    registro.registrar(estado, snapshot);
+}
 
     private void registrarEstadoNoEjecutado(RegistroSimulacion registro, String motivo, ProcesoRuntime runtime) {
         Proceso snapshot = new Proceso(
